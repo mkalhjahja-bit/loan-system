@@ -1,9 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, send_file
 import sqlite3, os, ast
-import pythoncom   # ✅ حل مشكلة COM
 from docxtpl import DocxTemplate
-from docx2pdf import convert
-from pypdf import PdfReader, PdfWriter
+from pypdf import PdfWriter, PdfReader
 
 app = Flask(__name__)
 app.secret_key = "loan123"
@@ -14,6 +12,8 @@ OUTPUT = os.path.join(BASE, "output")
 os.makedirs(OUTPUT, exist_ok=True)
 
 DB = os.path.join(BASE, "database.db")
+
+# ================= DATABASE =================
 
 def db():
     return sqlite3.connect(DB)
@@ -27,23 +27,23 @@ with db() as con:
     )
     """)
 
-# ---------------- LOGIN ----------------
+# ================= LOGIN =================
 
 @app.route("/", methods=["GET","POST"])
 def login():
-    if request.method=="POST":
-        if request.form["username"]=="admin" and request.form["password"]=="1234":
-            session["user"]="admin"
+    if request.method == "POST":
+        if request.form["username"] == "admin" and request.form["password"] == "1234":
+            session["user"] = "admin"
             return redirect("/home")
     return render_template("login.html")
 
-# ---------------- HOME ----------------
+# ================= HOME =================
 
 @app.route("/home")
 def home():
     return render_template("home.html")
 
-# ---------------- PAGES ----------------
+# ================= PAGES =================
 
 @app.route("/first-loan")
 def first_loan():
@@ -53,13 +53,19 @@ def first_loan():
 def continue_loan():
     return render_template("continue_loan.html", data=None)
 
-# ================== قائمة العملاء ==================
+@app.route("/card")
+def card():
+    return render_template("card.html", data=None)
+
+@app.route("/calculator")
+def calculator():
+    return render_template("calculator.html")
+
+# ================= CLIENT LIST =================
 
 @app.route("/clients")
 def clients():
-    con = db()
-    rows = con.execute("SELECT id,name FROM clients").fetchall()
-    con.close()
+    rows = db().execute("SELECT id,name FROM clients").fetchall()
     return render_template("clients.html", rows=rows)
 
 @app.route("/delete-client/<int:id>")
@@ -68,7 +74,7 @@ def delete_client(id):
         con.execute("DELETE FROM clients WHERE id=?", (id,))
     return redirect("/clients")
 
-# ---------------- CLIENT SAVE ----------------
+# ================= SAVE CLIENT =================
 
 @app.route("/save-client", methods=["POST"])
 def save_client():
@@ -78,7 +84,7 @@ def save_client():
         con.execute("INSERT INTO clients(name,data) VALUES(?,?)",(name,data))
     return redirect("/clients")
 
-# ---------------- CLIENT LOAD ----------------
+# ================= LOAD CLIENT =================
 
 @app.route("/load-client/<int:id>/<mode>")
 def load_client(id, mode):
@@ -91,85 +97,41 @@ def load_client(id, mode):
     if mode == "first":
         return render_template("first_loan.html", data=data)
 
-    return render_template("continue_loan.html", data=data)
+    if mode == "continue":
+        return render_template("continue_loan.html", data=data)
 
-@app.route("/open-first/<int:id>")
-def open_first(id):
-    row = db().execute("SELECT data FROM clients WHERE id=?", (id,)).fetchone()
-    data = ast.literal_eval(row[0])
-    return render_template("first_loan.html", data=data)
+    if mode == "card":
+        return render_template("card.html", data=data)
 
-@app.route("/open-continue/<int:id>")
-def open_continue(id):
-    row = db().execute("SELECT data FROM clients WHERE id=?", (id,)).fetchone()
-    data = ast.literal_eval(row[0])
-    return render_template("continue_loan.html", data=data)
+    return redirect("/clients")
 
-# ================== حاسبة القروض ==================
+# ================= WORD GENERATION =================
 
-@app.route("/calculator", methods=["GET","POST"])
-def calculator():
-    table = []
-
-    if request.method == "POST":
-        try:
-            P = float(request.form["amount"])
-            r = float(request.form["rate"]) / 100 / 12
-            n = int(request.form["months"])
-
-            pay = P * (r*(1+r)**n) / ((1+r)**n - 1)
-            bal = P
-
-            for i in range(1, n+1):
-                interest = bal * r
-                principal = pay - interest
-                bal -= principal
-                table.append((i, round(pay,2), round(interest,2),
-                              round(principal,2), round(bal,2)))
-        except:
-            pass
-
-    return render_template("calculator.html", table=table)
-
-# ---------------- PDF ENGINE ----------------
-
-def make_pdf(data, forms):
-    pythoncom.CoInitialize()   # ✅ الحل النهائي للخطأ
-
-    writer = PdfWriter()
+def generate_docs(data, forms):
+    files = []
 
     for f in forms:
         doc = DocxTemplate(os.path.join(WORD_DIR, f))
         doc.render(data)
 
-        d = os.path.join(OUTPUT, "_" + f)
-        p = d.replace(".docx",".pdf")
+        path = os.path.join(OUTPUT, f"_{f}")
+        doc.save(path)
+        files.append(path)
 
-        doc.save(d)
-        convert(d,p)
+    return files
 
-        for page in PdfReader(p).pages:
-            writer.add_page(page)
-
-    final = os.path.join(OUTPUT, "final.pdf")
-    with open(final,"wb") as out:
-        writer.write(out)
-
-    return final
-
-# ---------------- FIRST LOAN ----------------
+# ================= FIRST LOAN =================
 
 @app.route("/create-first", methods=["POST"])
 def create_first():
-    pdf = make_pdf(dict(request.form), ["form1.docx","form10.docx"])
-    return send_file(pdf, as_attachment=True)
+    generate_docs(dict(request.form), ["form1.docx","form10.docx"])
+    return redirect("/home")
 
-# ---------------- CONTINUE LOAN ----------------
+# ================= CONTINUE LOAN =================
 
 @app.route("/create-continue", methods=["POST"])
 def create_continue():
     data = dict(request.form)
-
     forms = [f for f in os.listdir(WORD_DIR) if f.endswith(".docx")]
 
     if data.get("debt_card"):
@@ -180,43 +142,26 @@ def create_continue():
     if not data.get("campaign"):
         if "form7.docx" in forms: forms.remove("form7.docx")
 
-    pdf = make_pdf(data, forms)
-    return send_file(pdf, as_attachment=True)
+    generate_docs(data, forms)
+    return redirect("/home")
 
-
-@app.route("/card-request")
-def card_request():
-    return render_template("card_request.html", data=None)
-
+# ================= CARD =================
 
 @app.route("/create-card", methods=["POST"])
 def create_card():
-    data = dict(request.form)
+    generate_docs(dict(request.form), [
+        "form1.docx","form2.docx","form9.docx","form10.docx","form11.docx"
+    ])
+    return redirect("/home")
 
-    forms = [
-        "form1.docx",
-        "form2.docx",
-        "form9.docx",
-        "form10.docx",
-        "form11.docx"
-    ]
-
-    pdf = make_pdf(data, forms)
-    return send_file(pdf, as_attachment=True)
-
-@app.route("/load-client/<int:id>/card")
-def open_card(id):
-    row = db().execute("SELECT data FROM clients WHERE id=?", (id,)).fetchone()
-    data = ast.literal_eval(row[0])
-    return render_template("card_request.html", data=data)
-
-# ---------------- LOGOUT ----------------
+# ================= LOGOUT =================
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
-# ---------------- RUN ----------------
+# ================= RUN =================
 
-app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)
