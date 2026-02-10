@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>حاسبة القروض</title>
+
+<style>
+body{font-family:tahoma;background:#f2f5f9}
+.container{max-width:1100px;margin:auto}
+.card{background:white;padding:25px;border-radius:12px;margin-top:25px}
+input,button{padding:10px;font-size:15px}
+button{background:#27ae60;color:white;border:none;cursor:pointer}
+table{width:100%;border-collapse:collapse;margin-top:20px}
+th,td{border:1px solid #ddd;padding:8px;text-align:center}
+th{background:#2d89ef;color:white}
+h2{text-align:center}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row div{flex:1}
+.result{margin-top:15px;font-size:18px}
+.safe{color:green;font-weight:bold}
+.risk{color:red;font-weight:bold}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<div class="card">
+
+<h2>حاسبة القروض الاحترافية</h2>
+
+<div class="row">
+<div>
+<label>مبلغ القرض</label>
+<input id="amount" type="number">
+</div>
+
+<div>
+<label>الفائدة %</label>
+<input id="rate" type="number">
+</div>
+
+<div>
+<label>المدة (أشهر)</label>
+<input id="months" type="number">
+</div>
+
+<div>
+<label>الراتب الشهري</label>
+<input id="salary" type="number">
+</div>
+</div>
+
+<button onclick="calc()">احتساب</button>
+<button onclick="window.print()">طباعة الجدول</button>
+
+<div class="result" id="summary"></div>
+
+<table>
+<thead>
+<tr>
+<th>الشهر</th>
+<th>القسط</th>
+<th>الفائدة</th>
+<th>الأصل</th>
+<th>المتبقي</th>
+</tr>
+</thead>
+<tbody id="table"></tbody>
+</table>
+
+</div>
+
+<a href="/home">⬅ رجوع</a>
+</div>
+
+<script>
+function calc(){
+
+let P = parseFloat(document.getElementById("amount").value)
+let r = parseFloat(document.getElementById("rate").value)/100/12
+let n = parseInt(document.getElementById("months").value)
+let salary = parseFloat(document.getElementById("salary").value)
+
+if(isNaN(P)||isNaN(r)||isNaN(n)||isNaN(salary)){
+ alert("يرجى إدخال جميع القيم")
+ return
+}
+
+let table = document.getElementById("table")
+let summary = document.getElementById("summary")
+table.innerHTML = ""
+
+let pay = P*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1)
+let bal = P
+
+for(let i=1;i<=n;i++){
+ let interest = bal*r
+ let principal = pay-interest
+ bal -= principal
+
+ table.innerHTML += `
+ <tr>
+ <td>${i}</td>
+ <td>${pay.toFixed(2)}</td>
+ <td>${interest.toFixed(2)}</td>
+ <td>${principal.toFixed(2)}</td>
+ <td>${bal.toFixed(2)}</td>
+ </tr>`
+}
+
+let burden = (pay/salary)*100
+let status = burden <= 55 ? 
+ `<span class="safe">${burden.toFixed(1)}% آمن</span>` :
+ `<span class="risk">${burden.toFixed(1)}% مرتفع</span>`
+
+summary.innerHTML = `
+القسط الشهري: ${pay.toFixed(2)} دينار<br>
+عبء الدين: ${status}
+`
+}
+</script>
+
+</body>
+</html>

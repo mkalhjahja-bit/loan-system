@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>نظام القروض</title>
+
+<style>
+body{
+    margin:0;
+    font-family: "Segoe UI", Tahoma;
+    background: linear-gradient(135deg,#eef2f7,#dfe6ee);
+}
+
+.container{
+    max-width:900px;
+    margin:auto;
+    padding-top:80px;
+    text-align:center;
+}
+
+h1{
+    color:#2c3e50;
+    margin-bottom:50px;
+    font-size:38px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+    gap:25px;
+}
+
+.card{
+    background:white;
+    border-radius:14px;
+    padding:35px 20px;
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+    transition:.3s;
+    text-decoration:none;
+    color:#2c3e50;
+    font-size:20px;
+    font-weight:600;
+}
+
+.card:hover{
+    transform:translateY(-6px);
+    box-shadow:0 14px 28px rgba(0,0,0,.15);
+}
+
+.loan{background:#2d89ef;color:white}
+.continue{background:#27ae60;color:white}
+.clients{background:#8e44ad;color:white}
+.logout{background:#e74c3c;color:white}
+
+
+.credit{
+    background:#e67e22;
+    color:white;
+}
+
+
+footer{
+    margin-top:60px;
+    color:#777;
+    font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>نظام إدارة القروض</h1>
+
+<div class="grid">
+
+<a class="card loan" href="/first-loan">
+طلب قرض جديد
+</a>
+
+<a class="card continue" href="/continue-loan">
+استكمال طلب قرض
+</a>
+
+<a class="card clients" href="/clients">
+قائمة العملاء
+</a>
+
+<a class="card calculator" href="/calculator">
+حاسبة القروض
+</a>
+
+<a class="card credit" href="/card-request">
+طلب بطاقة
+</a>
+
+
+<a class="card logout" href="/logout">
+تسجيل خروج
+</a>
+
+</div>
+
+<footer>
+© نظام القروض – محمد الحجاحجة
+</footer>
+</div>
+
+</body>
+</html>

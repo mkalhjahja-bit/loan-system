@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>استكمال طلب قرض</title>
+
+<style>
+body{font-family:tahoma;background:#f2f5f9}
+.card{max-width:950px;margin:auto;background:white;padding:25px;border-radius:12px}
+input{width:100%;padding:8px;margin:4px 0}
+h2{background:#eef;padding:10px}
+h3{margin-top:6px}
+button{background:#27ae60;color:white;padding:12px;border:none;margin-top:10px}
+.save{background:#3498db}
+.checks label{display:block;font-size:16px;margin:6px 0}
+</style>
+</head>
+<body>
+
+<form class="card" method="POST" action="/create-continue">
+
+<h2>البيانات الأساسية</h2>
+<input name="ClientName_AR" value="{{ data.ClientName_AR if data }}" placeholder="اسم العميل">
+<input name="FacilityAmount" value="{{ data.FacilityAmount if data }}" placeholder="مبلغ التسهيل">
+<input name="AccountNo" value="{{ data.AccountNo if data }}" placeholder="رقم الحساب">
+<input name="Branch" value="{{ data.Branch if data }}" placeholder="الفرع">
+<input name="Date" value="{{ data.Date if data }}" placeholder="التاريخ">
+
+<h2>بيانات العمل</h2>
+<input name="EmployeeName" value="{{ data.EmployeeName if data }}" placeholder="اسم الموظف">
+<input name="EmployerName" value="{{ data.EmployerName if data }}" placeholder="جهة العمل">
+<input name="WorkPlace" value="{{ data.WorkPlace if data }}" placeholder="مكان العمل">
+<input name="ContractType" value="{{ data.ContractType if data }}" placeholder="نوع العقد">
+<input name="JobTitle" value="{{ data.JobTitle if data }}" placeholder="الوظيفة">
+<input name="WorkStartDate" value="{{ data.WorkStartDate if data }}" placeholder="تاريخ بدء العمل">
+
+<input name="WorkStreet" value="{{ data.WorkStreet if data }}" placeholder="شارع العمل">
+<input name="WorkLandmark" value="{{ data.WorkLandmark if data }}" placeholder="معلم قريب للعمل">
+<input name="WorkDistrict" value="{{ data.WorkDistrict if data }}" placeholder="الحي - العمل">
+
+<h2>الدخل</h2>
+<input name="MonthlyIncome" value="{{ data.MonthlyIncome if data }}" placeholder="الدخل الشهري">
+<input name="OtherIncome" value="{{ data.OtherIncome if data }}" placeholder="دخول أخرى">
+<input name="OtherIncomeSource" value="{{ data.OtherIncomeSource if data }}" placeholder="مصدر الدخل الآخر">
+
+<h2>مكان السكن</h2>
+<input name="Country" value="{{ data.Country if data }}" placeholder="الدولة">
+<input name="Residence" value="{{ data.Residence if data }}" placeholder="مكان الإقامة">
+
+<input name="HomeStreet" value="{{ data.HomeStreet if data }}" placeholder="شارع السكن">
+<input name="HomeLandmark" value="{{ data.HomeLandmark if data }}" placeholder="معلم قريب للسكن">
+<input name="HomeDistrict" value="{{ data.HomeDistrict if data }}" placeholder="الحي - السكن">
+
+<input name="MobilePhone" value="{{ data.MobilePhone if data }}" placeholder="الهاتف الخلوي">
+
+<h2>الالتزامات</h2>
+<input name="EmployerObligations" value="{{ data.EmployerObligations if data }}" placeholder="التزامات جهة العمل">
+<input name="FinancialObligations" value="{{ data.FinancialObligations if data }}" placeholder="التزامات مالية">
+<input name="MonthlyInstallments" value="{{ data.MonthlyInstallments if data }}" placeholder="الأقساط الشهرية">
+
+<h2>المصاريف</h2>
+<input name="HousingExpenses" value="{{ data.HousingExpenses if data }}" placeholder="مصاريف المسكن">
+<input name="EducationExpenses" value="{{ data.EducationExpenses if data }}" placeholder="مصاريف تعليم">
+<input name="BillsExpenses" value="{{ data.BillsExpenses if data }}" placeholder="مصاريف فواتير">
+<input name="OtherExpenses" value="{{ data.OtherExpenses if data }}" placeholder="مصاريف أخرى">
+
+<h2>بيانات السداد</h2>
+<input name="PayToEntity" value="{{ data.PayToEntity if data }}" placeholder="الجهة المراد السداد لها">
+
+<h2>قائمة التحقق الخاصة بالقرض</h2>
+<div class="checks">
+<label>
+<input type="checkbox" name="debt_card"
+{% if data and data.get('debt_card') %}checked{% endif %}>
+ القرض سداد مديونية مع وجود بطاقة
+</label>
+
+<label>
+<input type="checkbox" name="campaign"
+{% if data and data.get('campaign') %}checked{% endif %}>
+ هل القرض ضمن حملة استقطاب
+</label>
+</div>
+
+<button type="submit">إنشاء الطلب</button>
+
+<button type="submit" class="save" formaction="/save-client">
+حفظ العميل
+</button>
+
+<br><br>
+<a href="/home">رجوع</a>
+
+</form>
+</body>
+</html>
