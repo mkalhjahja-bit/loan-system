@@ -1,4 +1,6 @@
 flask
+gunicorn
 docxtpl
 docx2pdf
 pypdf
+
