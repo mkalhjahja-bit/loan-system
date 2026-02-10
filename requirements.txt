@@ -2,4 +2,3 @@ flask
 docxtpl
 docx2pdf
 pypdf
-sqlite3
