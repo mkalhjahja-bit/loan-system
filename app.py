@@ -31,7 +31,7 @@ with db() as con:
 @app.route("/", methods=["GET","POST"])
 def login():
     if request.method == "POST":
-        if request.form["username"] == "admin" and request.form["password"] == "1234":
+        if request.form.get("username") == "admin" and request.form.get("password") == "1234":
             session["user"] = "admin"
             return redirect("/home")
     return render_template("login.html")
@@ -40,6 +40,8 @@ def login():
 
 @app.route("/home")
 def home():
+    if "user" not in session:
+        return redirect("/")
     return render_template("home.html")
 
 # ================= PAGES =================
@@ -64,7 +66,8 @@ def calculator():
 
 @app.route("/clients")
 def clients():
-    rows = db().execute("SELECT id,name FROM clients").fetchall()
+    with db() as con:
+        rows = con.execute("SELECT id,name FROM clients ORDER BY id DESC").fetchall()
     return render_template("clients.html", rows=rows)
 
 @app.route("/delete-client/<int:id>")
@@ -77,21 +80,31 @@ def delete_client(id):
 
 @app.route("/save-client", methods=["POST"])
 def save_client():
-    name = request.form.get("ClientName_AR","")
+    name = request.form.get("ClientName_AR", "")
     data = str(dict(request.form))
+
     with db() as con:
-        con.execute("INSERT INTO clients(name,data) VALUES(?,?)",(name,data))
+        con.execute(
+            "INSERT INTO clients(name,data) VALUES(?,?)",
+            (name, data)
+        )
+
     return redirect("/clients")
 
 # ================= LOAD CLIENT =================
 
 @app.route("/load-client/<int:id>/<mode>")
 def load_client(id, mode):
-    row = db().execute("SELECT data FROM clients WHERE id=?", (id,)).fetchone()
+    with db() as con:
+        row = con.execute("SELECT data FROM clients WHERE id=?", (id,)).fetchone()
+
     if not row:
         return redirect("/clients")
 
-    data = ast.literal_eval(row[0])
+    try:
+        data = ast.literal_eval(row[0])
+    except:
+        data = {}
 
     if mode == "first":
         return render_template("first_loan.html", data=data)
@@ -108,15 +121,27 @@ def load_client(id, mode):
 
 def generate_docs(data, forms):
     for f in forms:
-        doc = DocxTemplate(os.path.join(WORD_DIR, f))
+        file_path = os.path.join(WORD_DIR, f)
+
+        if not os.path.exists(file_path):
+            continue  # يتجاهل إذا الملف غير موجود
+
+        doc = DocxTemplate(file_path)
         doc.render(data)
-        doc.save(os.path.join(OUTPUT, "_" + f))
+
+        output_path = os.path.join(OUTPUT, "_" + f)
+        doc.save(output_path)
 
 # ================= FIRST LOAN =================
 
 @app.route("/create-first", methods=["POST"])
 def create_first():
-    generate_docs(dict(request.form), ["form1.docx","form10.docx"])
+    data = dict(request.form)
+
+    forms = ["form1.docx", "form10.docx"]
+
+    generate_docs(data, forms)
+
     return redirect("/home")
 
 # ================= CONTINUE LOAN =================
@@ -136,26 +161,38 @@ def create_continue():
         "form10.docx"
     ]
 
+    # معالجة آمنة للحذف
     if data.get("debt_card"):
-        forms.remove("form5.docx")
+        if "form5.docx" in forms:
+            forms.remove("form5.docx")
     else:
-        forms.remove("form6.docx")
+        if "form6.docx" in forms:
+            forms.remove("form6.docx")
 
     if not data.get("campaign"):
-        forms.remove("form7.docx")
+        if "form7.docx" in forms:
+            forms.remove("form7.docx")
 
     generate_docs(data, forms)
 
     return redirect("/home")
 
-
 # ================= CARD =================
 
 @app.route("/create-card", methods=["POST"])
 def create_card():
-    generate_docs(dict(request.form), [
-        "form1.docx","form2.docx","form9.docx","form10.docx","form11.docx"
-    ])
+    data = dict(request.form)
+
+    forms = [
+        "form1.docx",
+        "form2.docx",
+        "form9.docx",
+        "form10.docx",
+        "form11.docx"
+    ]
+
+    generate_docs(data, forms)
+
     return redirect("/home")
 
 # ================= LOGOUT =================
