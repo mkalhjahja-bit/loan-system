@@ -5,34 +5,11 @@
 <title>قائمة العملاء</title>
 
 <style>
-body{
-font-family:tahoma;
-background:#f2f5f9;
-}
-
-.container{
-max-width:950px;
-margin:auto;
-padding:30px;
-}
-
-h2{
-text-align:center;
-margin-bottom:20px;
-}
-
-.search{
-width:100%;
-padding:12px;
-border-radius:10px;
-border:1px solid #ccc;
-margin-bottom:20px;
-font-size:16px;
-}
-
+body{font-family:tahoma;background:#f2f5f9}
+.container{max-width:950px;margin:auto;padding:30px}
 .card{
 background:white;
-padding:16px 18px;
+padding:16px;
 margin-bottom:12px;
 border-radius:12px;
 box-shadow:0 6px 14px rgba(0,0,0,.08);
@@ -40,37 +17,25 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 }
-
-.name{
-font-size:18px;
-font-weight:bold;
-}
-
+.name{font-size:18px;font-weight:bold}
 .actions button{
 border:none;
 padding:8px 14px;
 border-radius:8px;
-cursor:pointer;
 color:white;
-font-size:14px;
+cursor:pointer;
 margin-left:6px;
 }
-
 .open{background:#2d89ef}
 .delete{background:#e74c3c}
-
 .modal{
 display:none;
 position:fixed;
-top:0;
-left:0;
-right:0;
-bottom:0;
+inset:0;
 background:rgba(0,0,0,.5);
 justify-content:center;
 align-items:center;
 }
-
 .box{
 background:white;
 padding:25px;
@@ -78,37 +43,25 @@ border-radius:12px;
 text-align:center;
 width:300px;
 }
-
 .box a{
 display:block;
 margin:8px 0;
 padding:10px;
 border-radius:8px;
-text-decoration:none;
 color:white;
+text-decoration:none;
 font-weight:bold;
 }
-
 .first{background:#2d89ef}
 .continue{background:#27ae60}
 .cardreq{background:#e67e22}
-
-.back{
-display:block;
-text-align:center;
-margin-top:25px;
-color:#555;
-}
 </style>
 </head>
 
 <body>
 
 <div class="container">
-
-<h2>قائمة العملاء</h2>
-
-<input class="search" placeholder="ابحث عن عميل..." onkeyup="searchClients(this.value)">
+<h2 style="text-align:center">قائمة العملاء</h2>
 
 {% for id,name in rows %}
 <div class="card client">
@@ -120,16 +73,14 @@ color:#555;
 </div>
 {% endfor %}
 
-<a class="back" href="/home">⬅ الرجوع للرئيسية</a>
-
+<a href="/home">⬅ رجوع</a>
 </div>
 
-<!-- نافذة الاختيار -->
 <div class="modal" id="modal">
 <div class="box">
 <h3>اختر العملية</h3>
-<a class="first" id="firstBtn">طلب قرض جديد</a>
-<a class="continue" id="continueBtn">استكمال طلب</a>
+<a class="first" id="firstBtn">طلب قرض</a>
+<a class="continue" id="continueBtn">استكمال</a>
 <a class="cardreq" id="cardBtn">طلب بطاقة</a>
 <button onclick="closeModal()">إغلاق</button>
 </div>
@@ -138,22 +89,12 @@ color:#555;
 <script>
 function openClient(id){
 document.getElementById("modal").style.display="flex"
-
-document.getElementById("firstBtn").href="/open-first/"+id
-document.getElementById("continueBtn").href="/open-continue/"+id
+document.getElementById("firstBtn").href="/load-client/"+id+"/first"
+document.getElementById("continueBtn").href="/load-client/"+id+"/continue"
 document.getElementById("cardBtn").href="/load-client/"+id+"/card"
 }
-
 function closeModal(){
 document.getElementById("modal").style.display="none"
-}
-
-function searchClients(text){
-let cards=document.querySelectorAll(".client")
-cards.forEach(c=>{
-let name=c.querySelector(".name").innerText
-c.style.display=name.includes(text)?"flex":"none"
-})
 }
 </script>
 
