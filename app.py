@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, flash
 import sqlite3, os, ast
 from docxtpl import DocxTemplate
 
@@ -40,8 +40,6 @@ def login():
 
 @app.route("/home")
 def home():
-    if "user" not in session:
-        return redirect("/")
     return render_template("home.html")
 
 # ================= PAGES =================
@@ -62,7 +60,7 @@ def card():
 def calculator():
     return render_template("calculator.html")
 
-# ================= CLIENT LIST =================
+# ================= CLIENTS =================
 
 @app.route("/clients")
 def clients():
@@ -80,15 +78,13 @@ def delete_client(id):
 
 @app.route("/save-client", methods=["POST"])
 def save_client():
-    name = request.form.get("ClientName_AR", "")
+    name = request.form.get("ClientName_AR","")
     data = str(dict(request.form))
 
     with db() as con:
-        con.execute(
-            "INSERT INTO clients(name,data) VALUES(?,?)",
-            (name, data)
-        )
+        con.execute("INSERT INTO clients(name,data) VALUES(?,?)",(name,data))
 
+    flash("تم حفظ العميل بنجاح ✅")
     return redirect("/clients")
 
 # ================= LOAD CLIENT =================
@@ -101,10 +97,7 @@ def load_client(id, mode):
     if not row:
         return redirect("/clients")
 
-    try:
-        data = ast.literal_eval(row[0])
-    except:
-        data = {}
+    data = ast.literal_eval(row[0])
 
     if mode == "first":
         return render_template("first_loan.html", data=data)
@@ -117,20 +110,27 @@ def load_client(id, mode):
 
     return redirect("/clients")
 
-# ================= WORD GENERATION =================
+# ================= WORD ENGINE =================
 
 def generate_docs(data, forms):
+    created = []
+
     for f in forms:
-        file_path = os.path.join(WORD_DIR, f)
+        path = os.path.join(WORD_DIR, f)
 
-        if not os.path.exists(file_path):
-            continue  # يتجاهل إذا الملف غير موجود
+        if not os.path.exists(path):
+            print("❌ Missing:", f)
+            continue
 
-        doc = DocxTemplate(file_path)
+        doc = DocxTemplate(path)
         doc.render(data)
 
-        output_path = os.path.join(OUTPUT, "_" + f)
-        doc.save(output_path)
+        out = os.path.join(OUTPUT, "_" + f)
+        doc.save(out)
+
+        created.append(out)
+
+    return created
 
 # ================= FIRST LOAN =================
 
@@ -138,9 +138,12 @@ def generate_docs(data, forms):
 def create_first():
     data = dict(request.form)
 
-    forms = ["form1.docx", "form10.docx"]
+    files = generate_docs(data, ["form1.docx","form10.docx"])
 
-    generate_docs(data, forms)
+    if not files:
+        flash("❌ لم يتم إنشاء أي نموذج — تحقق من ملفات Word")
+    else:
+        flash(f"✅ تم إنشاء {len(files)} نموذج بنجاح")
 
     return redirect("/home")
 
@@ -161,19 +164,20 @@ def create_continue():
         "form10.docx"
     ]
 
-    # معالجة آمنة للحذف
     if data.get("debt_card"):
-        if "form5.docx" in forms:
-            forms.remove("form5.docx")
+        if "form5.docx" in forms: forms.remove("form5.docx")
     else:
-        if "form6.docx" in forms:
-            forms.remove("form6.docx")
+        if "form6.docx" in forms: forms.remove("form6.docx")
 
     if not data.get("campaign"):
-        if "form7.docx" in forms:
-            forms.remove("form7.docx")
+        if "form7.docx" in forms: forms.remove("form7.docx")
 
-    generate_docs(data, forms)
+    files = generate_docs(data, forms)
+
+    if not files:
+        flash("❌ لم يتم إنشاء النماذج")
+    else:
+        flash(f"✅ تم إنشاء {len(files)} نموذج بنجاح")
 
     return redirect("/home")
 
@@ -191,7 +195,12 @@ def create_card():
         "form11.docx"
     ]
 
-    generate_docs(data, forms)
+    files = generate_docs(data, forms)
+
+    if not files:
+        flash("❌ لم يتم إنشاء نماذج البطاقة")
+    else:
+        flash(f"✅ تم إنشاء {len(files)} نموذج بطاقة")
 
     return redirect("/home")
 
