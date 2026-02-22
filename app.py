@@ -1,7 +1,6 @@
-from flask import Flask, render_template, request, redirect, session, send_file
+from flask import Flask, render_template, request, redirect, session
 import sqlite3, os, ast
 from docxtpl import DocxTemplate
-from zipfile import ZipFile
 
 app = Flask(__name__)
 app.secret_key = "loan123"
@@ -108,35 +107,17 @@ def load_client(id, mode):
 # ================= WORD GENERATION =================
 
 def generate_docs(data, forms):
-    paths = []
-
     for f in forms:
         doc = DocxTemplate(os.path.join(WORD_DIR, f))
         doc.render(data)
-
-        out_path = os.path.join(OUTPUT, f)
-        doc.save(out_path)
-        paths.append(out_path)
-
-    return paths
-
-
-def zip_files(files):
-    zip_path = os.path.join(OUTPUT, "result.zip")
-
-    with ZipFile(zip_path, 'w') as zipf:
-        for f in files:
-            zipf.write(f, os.path.basename(f))
-
-    return zip_path
+        doc.save(os.path.join(OUTPUT, "_" + f))
 
 # ================= FIRST LOAN =================
 
 @app.route("/create-first", methods=["POST"])
 def create_first():
-    files = generate_docs(dict(request.form), ["form1.docx","form10.docx"])
-    zip_file = zip_files(files)
-    return send_file(zip_file, as_attachment=True)
+    generate_docs(dict(request.form), ["form1.docx","form10.docx"])
+    return redirect("/home")
 
 # ================= CONTINUE LOAN =================
 
@@ -153,23 +134,17 @@ def create_continue():
     if not data.get("campaign"):
         if "form7.docx" in forms: forms.remove("form7.docx")
 
-    files = generate_docs(data, forms)
-    zip_file = zip_files(files)
-    return send_file(zip_file, as_attachment=True)
+    generate_docs(data, forms)
+    return redirect("/home")
 
 # ================= CARD =================
 
 @app.route("/create-card", methods=["POST"])
 def create_card():
-    files = generate_docs(dict(request.form), [
-        "form1.docx",
-        "form2.docx",
-        "form9.docx",
-        "form10.docx",
-        "form11.docx"
+    generate_docs(dict(request.form), [
+        "form1.docx","form2.docx","form9.docx","form10.docx","form11.docx"
     ])
-    zip_file = zip_files(files)
-    return send_file(zip_file, as_attachment=True)
+    return redirect("/home")
 
 # ================= LOGOUT =================
 
