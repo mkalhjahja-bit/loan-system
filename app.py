@@ -124,18 +124,30 @@ def create_first():
 @app.route("/create-continue", methods=["POST"])
 def create_continue():
     data = dict(request.form)
-    forms = [f for f in os.listdir(WORD_DIR) if f.endswith(".docx")]
+
+    forms = [
+        "form1.docx",
+        "form3.docx",
+        "form4.docx",
+        "form5.docx",
+        "form6.docx",
+        "form7.docx",
+        "form8.docx",
+        "form10.docx"
+    ]
 
     if data.get("debt_card"):
-        if "form5.docx" in forms: forms.remove("form5.docx")
+        forms.remove("form5.docx")
     else:
-        if "form6.docx" in forms: forms.remove("form6.docx")
+        forms.remove("form6.docx")
 
     if not data.get("campaign"):
-        if "form7.docx" in forms: forms.remove("form7.docx")
+        forms.remove("form7.docx")
 
     generate_docs(data, forms)
+
     return redirect("/home")
+
 
 # ================= CARD =================
 
