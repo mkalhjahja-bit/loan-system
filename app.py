@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, session, flash, sen
 import sqlite3, os, ast
 from docxtpl import DocxTemplate
 from docx import Document
+from copy import deepcopy
 
 app = Flask(__name__)
 app.secret_key = "loan123"
@@ -9,11 +10,10 @@ app.secret_key = "loan123"
 BASE = os.path.dirname(os.path.abspath(__file__))
 WORD_DIR = os.path.join(BASE, "word_templates")
 OUTPUT = os.path.join(BASE, "output")
+DB = os.path.join(BASE, "database.db")
 
 os.makedirs(WORD_DIR, exist_ok=True)
 os.makedirs(OUTPUT, exist_ok=True)
-
-DB = os.path.join(BASE, "database.db")
 
 # ================= DATABASE =================
 
@@ -82,10 +82,8 @@ def delete_client(id):
 def save_client():
     name = request.form.get("ClientName_AR","")
     data = str(dict(request.form))
-
     with db() as con:
         con.execute("INSERT INTO clients(name,data) VALUES(?,?)",(name,data))
-
     flash("✅ تم حفظ العميل")
     return redirect("/clients")
 
@@ -99,11 +97,11 @@ def load_client(id, mode):
 
     data = ast.literal_eval(row[0])
 
-    if mode == "first":
+    if mode=="first":
         return render_template("first_loan.html", data=data)
-    if mode == "continue":
+    if mode=="continue":
         return render_template("continue_loan.html", data=data)
-    if mode == "card":
+    if mode=="card":
         return render_template("card.html", data=data)
 
     return redirect("/clients")
@@ -112,6 +110,7 @@ def load_client(id, mode):
 
 def generate_docs(data, forms):
     final_doc = Document()
+    final_doc._body.clear_content()
 
     for f in forms:
         src = os.path.join(WORD_DIR, f)
@@ -127,10 +126,8 @@ def generate_docs(data, forms):
 
         part = Document(temp_path)
 
-        for p in part.paragraphs:
-            final_doc.add_paragraph(p.text)
-
-        final_doc.add_page_break()
+        for element in part.element.body:
+            final_doc.element.body.append(deepcopy(element))
 
     final_path = os.path.join(OUTPUT, "final_forms.docx")
     final_doc.save(final_path)
@@ -160,12 +157,15 @@ def create_continue():
     ]
 
     if data.get("debt_card"):
-        forms.remove("form5.docx")
+        if "form5.docx" in forms:
+            forms.remove("form5.docx")
     else:
-        forms.remove("form6.docx")
+        if "form6.docx" in forms:
+            forms.remove("form6.docx")
 
     if not data.get("campaign"):
-        forms.remove("form7.docx")
+        if "form7.docx" in forms:
+            forms.remove("form7.docx")
 
     file = generate_docs(data, forms)
     return send_file(file, as_attachment=True)
