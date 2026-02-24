@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, redirect, session, flash, url_for
+from flask import Flask, render_template, request, redirect, session, flash, send_file
 import sqlite3, os, ast
 from docxtpl import DocxTemplate
+from docx import Document
 
 app = Flask(__name__)
 app.secret_key = "loan123"
@@ -85,7 +86,7 @@ def save_client():
     with db() as con:
         con.execute("INSERT INTO clients(name,data) VALUES(?,?)",(name,data))
 
-    flash("✅ تم حفظ العميل بنجاح")
+    flash("✅ تم حفظ العميل")
     return redirect("/clients")
 
 # ================= LOAD CLIENT =================
@@ -100,53 +101,51 @@ def load_client(id, mode):
 
     if mode == "first":
         return render_template("first_loan.html", data=data)
-
     if mode == "continue":
         return render_template("continue_loan.html", data=data)
-
     if mode == "card":
         return render_template("card.html", data=data)
 
     return redirect("/clients")
 
-# ================= WORD GENERATOR =================
+# ================= WORD MERGER =================
 
 def generate_docs(data, forms):
-    created = []
+    final_doc = Document()
 
     for f in forms:
         src = os.path.join(WORD_DIR, f)
-
         if not os.path.isfile(src):
-            print("❌ Missing template:", src)
+            print("❌ Missing:", src)
             continue
 
-        doc = DocxTemplate(src)
-        doc.render(data)
+        temp = DocxTemplate(src)
+        temp.render(data)
 
-        out = os.path.join(OUTPUT, "_" + f)
-        doc.save(out)
+        temp_path = os.path.join(OUTPUT, "_temp.docx")
+        temp.save(temp_path)
 
-        print("✅ Generated:", out)
-        created.append(out)
+        part = Document(temp_path)
 
-    return created
+        for p in part.paragraphs:
+            final_doc.add_paragraph(p.text)
+
+        final_doc.add_page_break()
+
+    final_path = os.path.join(OUTPUT, "final_forms.docx")
+    final_doc.save(final_path)
+
+    return final_path
 
 # ================= FIRST LOAN =================
 
 @app.route("/create-first", methods=["POST"])
 def create_first():
-    files = generate_docs(dict(request.form), [
+    file = generate_docs(dict(request.form), [
         "form1.docx",
         "form10.docx"
     ])
-
-    if files:
-        flash(f"✅ تم إنشاء {len(files)} نموذج")
-    else:
-        flash("❌ لم يتم إنشاء أي ملف")
-
-    return redirect("/first-loan")
+    return send_file(file, as_attachment=True)
 
 # ================= CONTINUE LOAN =================
 
@@ -161,43 +160,28 @@ def create_continue():
     ]
 
     if data.get("debt_card"):
-        if "form5.docx" in forms:
-            forms.remove("form5.docx")
+        forms.remove("form5.docx")
     else:
-        if "form6.docx" in forms:
-            forms.remove("form6.docx")
+        forms.remove("form6.docx")
 
     if not data.get("campaign"):
-        if "form7.docx" in forms:
-            forms.remove("form7.docx")
+        forms.remove("form7.docx")
 
-    files = generate_docs(data, forms)
-
-    if files:
-        flash(f"✅ تم إنشاء {len(files)} نموذج")
-    else:
-        flash("❌ لم يتم إنشاء الملفات")
-
-    return redirect("/continue-loan")
+    file = generate_docs(data, forms)
+    return send_file(file, as_attachment=True)
 
 # ================= CARD =================
 
 @app.route("/create-card", methods=["POST"])
 def create_card():
-    files = generate_docs(dict(request.form), [
+    file = generate_docs(dict(request.form), [
         "form1.docx",
         "form2.docx",
         "form9.docx",
         "form10.docx",
         "form11.docx"
     ])
-
-    if files:
-        flash(f"✅ تم إنشاء {len(files)} نموذج بطاقة")
-    else:
-        flash("❌ لم يتم إنشاء نماذج البطاقة")
-
-    return redirect("/card")
+    return send_file(file, as_attachment=True)
 
 # ================= LOGOUT =================
 
