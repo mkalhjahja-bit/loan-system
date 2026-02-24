@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, flash
+from flask import Flask, render_template, request, redirect, session, flash, url_for
 import sqlite3, os, ast
 from docxtpl import DocxTemplate
 
@@ -85,7 +85,7 @@ def save_client():
     with db() as con:
         con.execute("INSERT INTO clients(name,data) VALUES(?,?)",(name,data))
 
-    flash("تم حفظ العميل ✅")
+    flash("✅ تم حفظ العميل بنجاح")
     return redirect("/clients")
 
 # ================= LOAD CLIENT =================
@@ -98,11 +98,13 @@ def load_client(id, mode):
 
     data = ast.literal_eval(row[0])
 
-    if mode=="first":
+    if mode == "first":
         return render_template("first_loan.html", data=data)
-    if mode=="continue":
+
+    if mode == "continue":
         return render_template("continue_loan.html", data=data)
-    if mode=="card":
+
+    if mode == "card":
         return render_template("card.html", data=data)
 
     return redirect("/clients")
@@ -116,7 +118,7 @@ def generate_docs(data, forms):
         src = os.path.join(WORD_DIR, f)
 
         if not os.path.isfile(src):
-            print("❌ Missing:", src)
+            print("❌ Missing template:", src)
             continue
 
         doc = DocxTemplate(src)
@@ -125,7 +127,7 @@ def generate_docs(data, forms):
         out = os.path.join(OUTPUT, "_" + f)
         doc.save(out)
 
-        print("✅ Created:", out)
+        print("✅ Generated:", out)
         created.append(out)
 
     return created
@@ -134,14 +136,17 @@ def generate_docs(data, forms):
 
 @app.route("/create-first", methods=["POST"])
 def create_first():
-    files = generate_docs(dict(request.form), ["form1.docx","form10.docx"])
+    files = generate_docs(dict(request.form), [
+        "form1.docx",
+        "form10.docx"
+    ])
 
-    if not files:
-        flash("❌ لم يتم إنشاء أي ملف Word")
+    if files:
+        flash(f"✅ تم إنشاء {len(files)} نموذج")
     else:
-        flash(f"✅ تم إنشاء {len(files)} ملف")
+        flash("❌ لم يتم إنشاء أي ملف")
 
-    return redirect("/home")
+    return redirect("/first-loan")
 
 # ================= CONTINUE LOAN =================
 
@@ -156,36 +161,43 @@ def create_continue():
     ]
 
     if data.get("debt_card"):
-        if "form5.docx" in forms: forms.remove("form5.docx")
+        if "form5.docx" in forms:
+            forms.remove("form5.docx")
     else:
-        if "form6.docx" in forms: forms.remove("form6.docx")
+        if "form6.docx" in forms:
+            forms.remove("form6.docx")
 
     if not data.get("campaign"):
-        if "form7.docx" in forms: forms.remove("form7.docx")
+        if "form7.docx" in forms:
+            forms.remove("form7.docx")
 
     files = generate_docs(data, forms)
 
-    if not files:
-        flash("❌ لم يتم إنشاء الملفات")
+    if files:
+        flash(f"✅ تم إنشاء {len(files)} نموذج")
     else:
-        flash(f"✅ تم إنشاء {len(files)} ملف")
+        flash("❌ لم يتم إنشاء الملفات")
 
-    return redirect("/home")
+    return redirect("/continue-loan")
 
 # ================= CARD =================
 
 @app.route("/create-card", methods=["POST"])
 def create_card():
     files = generate_docs(dict(request.form), [
-        "form1.docx","form2.docx","form9.docx","form10.docx","form11.docx"
+        "form1.docx",
+        "form2.docx",
+        "form9.docx",
+        "form10.docx",
+        "form11.docx"
     ])
 
-    if not files:
-        flash("❌ نماذج البطاقة لم تُنشأ")
-    else:
+    if files:
         flash(f"✅ تم إنشاء {len(files)} نموذج بطاقة")
+    else:
+        flash("❌ لم يتم إنشاء نماذج البطاقة")
 
-    return redirect("/home")
+    return redirect("/card")
 
 # ================= LOGOUT =================
 
