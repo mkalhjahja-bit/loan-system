@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, flash, send_file
+from flask import Flask, render_template, request, redirect, session, send_file, flash
 import sqlite3, os, ast, zipfile
 from docxtpl import DocxTemplate
 
@@ -35,8 +35,8 @@ with db() as con:
 @app.route("/", methods=["GET","POST"])
 def login():
     if request.method == "POST":
-        if request.form.get("username")=="admin" and request.form.get("password")=="1234":
-            session["user"]="admin"
+        if request.form.get("username") == "admin" and request.form.get("password") == "1234":
+            session["user"] = "admin"
             return redirect("/home")
     return render_template("login.html")
 
@@ -87,13 +87,14 @@ def save_client():
     with db() as con:
         con.execute("INSERT INTO clients(name,data) VALUES(?,?)",(name,data))
 
-    flash("✅ تم حفظ العميل")
+    flash("تم حفظ العميل ✅")
     return redirect("/clients")
 
 # ================= LOAD CLIENT =================
 
 @app.route("/load-client/<int:id>/<mode>")
 def load_client(id, mode):
+
     row = db().execute("SELECT data FROM clients WHERE id=?", (id,)).fetchone()
     if not row:
         return redirect("/clients")
@@ -111,28 +112,28 @@ def load_client(id, mode):
 
     return redirect("/clients")
 
-# ================= WORD → ZIP ENGINE =================
+# ================= ZIP GENERATOR =================
 
-def generate_and_zip(data, forms):
+def generate_zip(data, forms):
 
-    zip_path = os.path.join(OUTPUT, "loan_forms.zip")
+    zip_path = os.path.join(OUTPUT, "forms_result.zip")
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
 
         for f in forms:
-            template = os.path.join(WORD_DIR, f)
+            src = os.path.join(WORD_DIR, f)
 
-            if not os.path.exists(template):
-                print("Missing:", template)
+            if not os.path.isfile(src):
+                print("❌ Missing:", f)
                 continue
 
-            doc = DocxTemplate(template)
+            doc = DocxTemplate(src)
             doc.render(data)
 
-            output_file = os.path.join(OUTPUT, f)
-            doc.save(output_file)
+            out = os.path.join(OUTPUT, f)
+            doc.save(out)
 
-            zipf.write(output_file, f)
+            zipf.write(out, f)
 
     return zip_path
 
@@ -141,11 +142,12 @@ def generate_and_zip(data, forms):
 @app.route("/create-first", methods=["POST"])
 def create_first():
 
-    zip_file = generate_and_zip(dict(request.form), [
+    forms = [
         "form1.docx",
         "form10.docx"
-    ])
+    ]
 
+    zip_file = generate_zip(dict(request.form), forms)
     return send_file(zip_file, as_attachment=True)
 
 # ================= CONTINUE LOAN =================
@@ -157,18 +159,17 @@ def create_continue():
 
     forms = [
         "form1.docx",
-        "form2.docx",
         "form3.docx",
         "form4.docx",
         "form5.docx",
         "form6.docx",
         "form7.docx",
         "form8.docx",
-        "form9.docx",
-        "form10.docx"
-        "form11.docx",
+        "form10.docx",
+        "form11.docx"
     ]
 
+    # شرط سداد المديونية
     if data.get("debt_card"):
         if "form5.docx" in forms:
             forms.remove("form5.docx")
@@ -176,12 +177,12 @@ def create_continue():
         if "form6.docx" in forms:
             forms.remove("form6.docx")
 
+    # شرط الحملة
     if not data.get("campaign"):
         if "form7.docx" in forms:
             forms.remove("form7.docx")
 
-    zip_file = generate_and_zip(data, forms)
-
+    zip_file = generate_zip(data, forms)
     return send_file(zip_file, as_attachment=True)
 
 # ================= CARD =================
@@ -189,14 +190,15 @@ def create_continue():
 @app.route("/create-card", methods=["POST"])
 def create_card():
 
-    zip_file = generate_and_zip(dict(request.form), [
+    forms = [
         "form1.docx",
         "form2.docx",
         "form9.docx",
         "form10.docx",
         "form11.docx"
-    ])
+    ]
 
+    zip_file = generate_zip(dict(request.form), forms)
     return send_file(zip_file, as_attachment=True)
 
 # ================= LOGOUT =================
