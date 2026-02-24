@@ -3,62 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <title>طلب بطاقة</title>
+
 <style>
 body{font-family:tahoma;background:#f2f5f9}
 .card{max-width:950px;margin:auto;background:white;padding:25px;border-radius:12px}
 input{width:100%;padding:8px;margin:4px 0}
 h2{background:#eef;padding:10px}
 button{background:#e67e22;color:white;padding:12px;border:none;margin-top:10px}
+.save{background:#3498db}
 </style>
 </head>
+
 <body>
 
 <form class="card" method="POST" action="/create-card">
 
 <h2>البيانات الأساسية</h2>
-<input name="ClientName_AR" placeholder="اسم العميل" value="{{ data.ClientName_AR if data }}">
-<input name="FacilityAmount" placeholder="مبلغ التسهيل" value="{{ data.FacilityAmount if data }}">
-<input name="AccountNo" placeholder="رقم الحساب" value="{{ data.AccountNo if data }}">
-<input name="Branch" placeholder="الفرع" value="{{ data.Branch if data }}">
-<input name="Date" placeholder="التاريخ" value="{{ data.Date if data }}">
+<input name="ClientName_AR" value="{{ data.get('ClientName_AR','') if data }}" placeholder="اسم العميل">
+<input name="FacilityAmount" value="{{ data.get('FacilityAmount','') if data }}" placeholder="مبلغ التسهيل">
+<input name="AccountNo" value="{{ data.get('AccountNo','') if data }}" placeholder="رقم الحساب">
+<input name="Branch" value="{{ data.get('Branch','') if data }}" placeholder="الفرع">
+<input name="Date" value="{{ data.get('Date','') if data }}" placeholder="التاريخ">
 
 <h2>بيانات العمل</h2>
-<input name="EmployeeName" placeholder="اسم الموظف" value="{{ data.EmployeeName if data }}">
-<input name="EmployerName" placeholder="جهة العمل" value="{{ data.EmployerName if data }}">
-<input name="WorkPlace" placeholder="مكان العمل" value="{{ data.WorkPlace if data }}">
-<input name="ContractType" placeholder="نوع العقد" value="{{ data.ContractType if data }}">
-<input name="JobTitle" placeholder="الوظيفة" value="{{ data.JobTitle if data }}">
-<input name="WorkStartDate" placeholder="تاريخ بدء العمل" value="{{ data.WorkStartDate if data }}">
-<input name="WorkStreet" placeholder="شارع العمل" value="{{ data.WorkStreet if data }}">
-<input name="WorkLandmark" placeholder="معلم قريب للعمل" value="{{ data.WorkLandmark if data }}">
-<input name="WorkDistrict" placeholder="الحي - العمل" value="{{ data.WorkDistrict if data }}">
+<input name="EmployeeName" value="{{ data.get('EmployeeName','') if data }}" placeholder="اسم الموظف">
+<input name="EmployerName" value="{{ data.get('EmployerName','') if data }}" placeholder="جهة العمل">
+<input name="WorkPlace" value="{{ data.get('WorkPlace','') if data }}" placeholder="مكان العمل">
+<input name="ContractType" value="{{ data.get('ContractType','') if data }}" placeholder="نوع العقد">
+<input name="JobTitle" value="{{ data.get('JobTitle','') if data }}" placeholder="الوظيفة">
+<input name="WorkStartDate" value="{{ data.get('WorkStartDate','') if data }}" placeholder="تاريخ بدء العمل">
+<input name="WorkStreet" value="{{ data.get('WorkStreet','') if data }}" placeholder="شارع العمل">
+<input name="WorkLandmark" value="{{ data.get('WorkLandmark','') if data }}" placeholder="معلم قريب للعمل">
+<input name="WorkDistrict" value="{{ data.get('WorkDistrict','') if data }}" placeholder="الحي - العمل">
 
 <h2>الدخل</h2>
-<input name="MonthlyIncome" placeholder="الدخل الشهري" value="{{ data.MonthlyIncome if data }}">
-<input name="OtherIncome" placeholder="دخول أخرى" value="{{ data.OtherIncome if data }}">
-<input name="OtherIncomeSource" placeholder="مصدر الدخل الآخر" value="{{ data.OtherIncomeSource if data }}">
+<input name="MonthlyIncome" value="{{ data.get('MonthlyIncome','') if data }}" placeholder="الدخل الشهري">
+<input name="OtherIncome" value="{{ data.get('OtherIncome','') if data }}" placeholder="دخول أخرى">
+<input name="OtherIncomeSource" value="{{ data.get('OtherIncomeSource','') if data }}" placeholder="مصدر الدخل الآخر">
 
 <h2>مكان السكن</h2>
-<input name="Country" placeholder="الدولة" value="{{ data.Country if data }}">
-<input name="Residence" placeholder="مكان الإقامة" value="{{ data.Residence if data }}">
-<input name="HomeStreet" placeholder="شارع السكن" value="{{ data.HomeStreet if data }}">
-<input name="HomeLandmark" placeholder="معلم قريب للسكن" value="{{ data.HomeLandmark if data }}">
-<input name="HomeDistrict" placeholder="الحي - السكن" value="{{ data.HomeDistrict if data }}">
+<input name="Country" value="{{ data.get('Country','') if data }}" placeholder="الدولة">
+<input name="Residence" value="{{ data.get('Residence','') if data }}" placeholder="مكان الإقامة">
+<input name="HomeStreet" value="{{ data.get('HomeStreet','') if data }}" placeholder="شارع السكن">
+<input name="HomeLandmark" value="{{ data.get('HomeLandmark','') if data }}" placeholder="معلم قريب للسكن">
+<input name="HomeDistrict" value="{{ data.get('HomeDistrict','') if data }}" placeholder="الحي - السكن">
 
-<input name="MobilePhone" placeholder="الهاتف الخلوي" value="{{ data.MobilePhone if data }}">
+<input name="MobilePhone" value="{{ data.get('MobilePhone','') if data }}" placeholder="الهاتف الخلوي">
 
 <h2>الالتزامات</h2>
-<input name="EmployerObligations" placeholder="التزامات جهة العمل" value="{{ data.EmployerObligations if data }}">
-<input name="FinancialObligations" placeholder="التزامات مالية" value="{{ data.FinancialObligations if data }}">
-<input name="MonthlyInstallments" placeholder="الأقساط الشهرية" value="{{ data.MonthlyInstallments if data }}">
+<input name="EmployerObligations" value="{{ data.get('EmployerObligations','') if data }}" placeholder="التزامات جهة العمل">
+<input name="FinancialObligations" value="{{ data.get('FinancialObligations','') if data }}" placeholder="التزامات مالية">
+<input name="MonthlyInstallments" value="{{ data.get('MonthlyInstallments','') if data }}" placeholder="الأقساط الشهرية">
 
 <h2>المصاريف</h2>
-<input name="HousingExpenses" placeholder="مصاريف المسكن" value="{{ data.HousingExpenses if data }}">
-<input name="EducationExpenses" placeholder="مصاريف تعليم" value="{{ data.EducationExpenses if data }}">
-<input name="BillsExpenses" placeholder="مصاريف فواتير" value="{{ data.BillsExpenses if data }}">
-<input name="OtherExpenses" placeholder="مصاريف أخرى" value="{{ data.OtherExpenses if data }}">
+<input name="HousingExpenses" value="{{ data.get('HousingExpenses','') if data }}" placeholder="مصاريف المسكن">
+<input name="EducationExpenses" value="{{ data.get('EducationExpenses','') if data }}" placeholder="مصاريف تعليم">
+<input name="BillsExpenses" value="{{ data.get('BillsExpenses','') if data }}" placeholder="مصاريف فواتير">
+<input name="OtherExpenses" value="{{ data.get('OtherExpenses','') if data }}" placeholder="مصاريف أخرى">
 
 <button type="submit">إنشاء طلب البطاقة</button>
+
+<button type="submit" class="save" formaction="/save-client">
+حفظ العميل
+</button>
 
 <br><br>
 <a href="/home">رجوع</a>
