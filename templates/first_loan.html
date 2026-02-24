@@ -5,63 +5,100 @@
 <title>طلب قرض لأول مرة</title>
 
 <style>
-body{font-family:tahoma;background:#f2f5f9}
-.card{max-width:950px;margin:auto;background:white;padding:25px;border-radius:12px}
-input{width:100%;padding:8px;margin:4px 0}
-h2{background:#eef;padding:10px}
-button{background:#27ae60;color:white;padding:12px;border:none;margin-top:10px}
-.save{background:#3498db}
+body{
+    font-family:tahoma;
+    background:#f2f5f9;
+}
+.card{
+    max-width:950px;
+    margin:auto;
+    background:white;
+    padding:25px;
+    border-radius:12px;
+}
+input{
+    width:100%;
+    padding:10px;
+    margin:5px 0;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+h2{
+    background:#eef;
+    padding:10px;
+    border-radius:6px;
+}
+button{
+    background:#27ae60;
+    color:white;
+    padding:12px;
+    border:none;
+    margin-top:12px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+}
+.save{
+    background:#3498db;
+}
+a{
+    display:inline-block;
+    margin-top:15px;
+    color:#555;
+}
 </style>
 </head>
+
 <body>
 
 <form class="card" method="POST" action="/create-first">
 
 <h2>البيانات الأساسية</h2>
-<input name="ClientName_AR" value="{{ data.get('ClientName_AR','') if data }}" placeholder="اسم العميل">
-<input name="FacilityAmount" value="{{ data.get('FacilityAmount','') if data }}" placeholder="مبلغ التسهيل">
-<input name="AccountNo" value="{{ data.get('AccountNo','') if data }}" placeholder="رقم الحساب">
-<input name="Branch" value="{{ data.get('Branch','') if data }}" placeholder="الفرع">
-<input name="Date" value="{{ data.get('Date','') if data }}" placeholder="التاريخ">
+<input name="ClientName_AR" placeholder="اسم العميل" value="{{ data['ClientName_AR'] if data else '' }}">
+<input name="FacilityAmount" placeholder="مبلغ التسهيل" value="{{ data['FacilityAmount'] if data else '' }}">
+<input name="AccountNo" placeholder="رقم الحساب" value="{{ data['AccountNo'] if data else '' }}">
+<input name="Branch" placeholder="الفرع" value="{{ data['Branch'] if data else '' }}">
+<input name="Date" placeholder="التاريخ" value="{{ data['Date'] if data else '' }}">
 
 <h2>بيانات العمل</h2>
-<input name="EmployeeName" value="{{ data.get('EmployeeName','') if data }}" placeholder="اسم الموظف">
-<input name="EmployerName" value="{{ data.get('EmployerName','') if data }}" placeholder="جهة العمل">
-<input name="WorkPlace" value="{{ data.get('WorkPlace','') if data }}" placeholder="مكان العمل">
-<input name="ContractType" value="{{ data.get('ContractType','') if data }}" placeholder="نوع العقد">
-<input name="JobTitle" value="{{ data.get('JobTitle','') if data }}" placeholder="الوظيفة">
-<input name="WorkStartDate" value="{{ data.get('WorkStartDate','') if data }}" placeholder="تاريخ بدء العمل">
+<input name="EmployeeName" placeholder="اسم الموظف" value="{{ data['EmployeeName'] if data else '' }}">
+<input name="EmployerName" placeholder="جهة العمل" value="{{ data['EmployerName'] if data else '' }}">
+<input name="WorkPlace" placeholder="مكان العمل" value="{{ data['WorkPlace'] if data else '' }}">
+<input name="ContractType" placeholder="نوع العقد" value="{{ data['ContractType'] if data else '' }}">
+<input name="JobTitle" placeholder="الوظيفة" value="{{ data['JobTitle'] if data else '' }}">
+<input name="WorkStartDate" placeholder="تاريخ بدء العمل" value="{{ data['WorkStartDate'] if data else '' }}">
 
 <h2>الدخل</h2>
-<input name="MonthlyIncome" value="{{ data.get('MonthlyIncome','') if data }}" placeholder="الدخل الشهري">
-<input name="OtherIncome" value="{{ data.get('OtherIncome','') if data }}" placeholder="دخول أخرى">
-<input name="OtherIncomeSource" value="{{ data.get('OtherIncomeSource','') if data }}" placeholder="مصدر الدخل الآخر">
+<input name="MonthlyIncome" placeholder="الدخل الشهري" value="{{ data['MonthlyIncome'] if data else '' }}">
+<input name="OtherIncome" placeholder="دخول أخرى" value="{{ data['OtherIncome'] if data else '' }}">
+<input name="OtherIncomeSource" placeholder="مصدر الدخل الآخر" value="{{ data['OtherIncomeSource'] if data else '' }}">
 
 <h2>مكان السكن</h2>
-<input name="Country" value="{{ data.get('Country','') if data }}" placeholder="الدولة">
-<input name="Residence" value="{{ data.get('Residence','') if data }}" placeholder="مكان الإقامة">
-<input name="MobilePhone" value="{{ data.get('MobilePhone','') if data }}" placeholder="الهاتف الخلوي">
+<input name="Country" placeholder="الدولة" value="{{ data['Country'] if data else '' }}">
+<input name="Residence" placeholder="مكان الإقامة" value="{{ data['Residence'] if data else '' }}">
+<input name="MobilePhone" placeholder="الهاتف الخلوي" value="{{ data['MobilePhone'] if data else '' }}">
 
 <h2>الالتزامات</h2>
-<input name="EmployerObligations" value="{{ data.get('EmployerObligations','') if data }}" placeholder="التزامات جهة العمل">
-<input name="FinancialObligations" value="{{ data.get('FinancialObligations','') if data }}" placeholder="التزامات مالية">
-<input name="MonthlyInstallments" value="{{ data.get('MonthlyInstallments','') if data }}" placeholder="الأقساط الشهرية">
+<input name="EmployerObligations" placeholder="التزامات جهة العمل" value="{{ data['EmployerObligations'] if data else '' }}">
+<input name="FinancialObligations" placeholder="التزامات مالية" value="{{ data['FinancialObligations'] if data else '' }}">
+<input name="MonthlyInstallments" placeholder="الأقساط الشهرية" value="{{ data['MonthlyInstallments'] if data else '' }}">
 
 <h2>المصاريف</h2>
-<input name="HousingExpenses" value="{{ data.get('HousingExpenses','') if data }}" placeholder="مصاريف المسكن">
-<input name="EducationExpenses" value="{{ data.get('EducationExpenses','') if data }}" placeholder="مصاريف تعليم">
-<input name="BillsExpenses" value="{{ data.get('BillsExpenses','') if data }}" placeholder="مصاريف فواتير">
-<input name="OtherExpenses" value="{{ data.get('OtherExpenses','') if data }}" placeholder="مصاريف أخرى">
+<input name="HousingExpenses" placeholder="مصاريف المسكن" value="{{ data['HousingExpenses'] if data else '' }}">
+<input name="EducationExpenses" placeholder="مصاريف تعليم" value="{{ data['EducationExpenses'] if data else '' }}">
+<input name="BillsExpenses" placeholder="مصاريف فواتير" value="{{ data['BillsExpenses'] if data else '' }}">
+<input name="OtherExpenses" placeholder="مصاريف أخرى" value="{{ data['OtherExpenses'] if data else '' }}">
 
-<button type="submit">إنشاء الطلب</button>
+<button type="submit">📄 إنشاء الطلب</button>
 
 <button type="submit" class="save" formaction="/save-client">
-حفظ العميل
+💾 حفظ العميل
 </button>
 
-<br><br>
-<a href="/home">رجوع</a>
+<br>
+<a href="/home">⬅ الرجوع للرئيسية</a>
 
 </form>
+
 </body>
 </html>
