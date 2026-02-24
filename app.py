@@ -100,16 +100,18 @@ def load_client(id, mode):
 
     data = ast.literal_eval(row[0])
 
-    if mode=="first":
+    if mode == "first":
         return render_template("first_loan.html", data=data)
-    if mode=="continue":
+
+    if mode == "continue":
         return render_template("continue_loan.html", data=data)
-    if mode=="card":
+
+    if mode == "card":
         return render_template("card.html", data=data)
 
     return redirect("/clients")
 
-# ================= WORD + ZIP ENGINE =================
+# ================= WORD → ZIP ENGINE =================
 
 def generate_and_zip(data, forms):
 
@@ -118,18 +120,19 @@ def generate_and_zip(data, forms):
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
 
         for f in forms:
-            src = os.path.join(WORD_DIR, f)
+            template = os.path.join(WORD_DIR, f)
 
-            if not os.path.isfile(src):
+            if not os.path.exists(template):
+                print("Missing:", template)
                 continue
 
-            doc = DocxTemplate(src)
+            doc = DocxTemplate(template)
             doc.render(data)
 
-            out = os.path.join(OUTPUT, f)
-            doc.save(out)
+            output_file = os.path.join(OUTPUT, f)
+            doc.save(output_file)
 
-            zipf.write(out, f)
+            zipf.write(output_file, f)
 
     return zip_path
 
@@ -153,18 +156,26 @@ def create_continue():
     data = dict(request.form)
 
     forms = [
-        "form1.docx","form3.docx","form4.docx",
-        "form5.docx","form6.docx","form7.docx",
-        "form8.docx","form10.docx"
+        "form1.docx",
+        "form3.docx",
+        "form4.docx",
+        "form5.docx",
+        "form6.docx",
+        "form7.docx",
+        "form8.docx",
+        "form10.docx"
     ]
 
     if data.get("debt_card"):
-        forms.remove("form5.docx")
+        if "form5.docx" in forms:
+            forms.remove("form5.docx")
     else:
-        forms.remove("form6.docx")
+        if "form6.docx" in forms:
+            forms.remove("form6.docx")
 
     if not data.get("campaign"):
-        forms.remove("form7.docx")
+        if "form7.docx" in forms:
+            forms.remove("form7.docx")
 
     zip_file = generate_and_zip(data, forms)
 
