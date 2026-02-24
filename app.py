@@ -1,8 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, flash, send_file
-import sqlite3, os, ast
+import sqlite3, os, ast, zipfile
 from docxtpl import DocxTemplate
-from docx import Document
-from copy import deepcopy
 
 app = Flask(__name__)
 app.secret_key = "loan123"
@@ -37,8 +35,8 @@ with db() as con:
 @app.route("/", methods=["GET","POST"])
 def login():
     if request.method == "POST":
-        if request.form.get("username") == "admin" and request.form.get("password") == "1234":
-            session["user"] = "admin"
+        if request.form.get("username")=="admin" and request.form.get("password")=="1234":
+            session["user"]="admin"
             return redirect("/home")
     return render_template("login.html")
 
@@ -83,11 +81,11 @@ def delete_client(id):
 
 @app.route("/save-client", methods=["POST"])
 def save_client():
-    name = request.form.get("ClientName_AR", "")
+    name = request.form.get("ClientName_AR","")
     data = str(dict(request.form))
 
     with db() as con:
-        con.execute("INSERT INTO clients(name,data) VALUES(?,?)", (name, data))
+        con.execute("INSERT INTO clients(name,data) VALUES(?,?)",(name,data))
 
     flash("✅ تم حفظ العميل")
     return redirect("/clients")
@@ -96,75 +94,56 @@ def save_client():
 
 @app.route("/load-client/<int:id>/<mode>")
 def load_client(id, mode):
-
     row = db().execute("SELECT data FROM clients WHERE id=?", (id,)).fetchone()
     if not row:
         return redirect("/clients")
 
     data = ast.literal_eval(row[0])
 
-    if mode == "first":
+    if mode=="first":
         return render_template("first_loan.html", data=data)
-
-    if mode == "continue":
+    if mode=="continue":
         return render_template("continue_loan.html", data=data)
-
-    if mode == "card":
+    if mode=="card":
         return render_template("card.html", data=data)
 
     return redirect("/clients")
 
-# ================= WORD MERGER (FINAL CLEAN) =================
+# ================= WORD + ZIP ENGINE =================
 
-def generate_docs(data, forms):
+def generate_and_zip(data, forms):
 
-    if not forms:
-        return None
+    zip_path = os.path.join(OUTPUT, "loan_forms.zip")
 
-    # أول نموذج كأساس
-    base_path = os.path.join(WORD_DIR, forms[0])
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
 
-    base_tpl = DocxTemplate(base_path)
-    base_tpl.render(data)
+        for f in forms:
+            src = os.path.join(WORD_DIR, f)
 
-    temp_base = os.path.join(OUTPUT, "_base.docx")
-    base_tpl.save(temp_base)
+            if not os.path.isfile(src):
+                continue
 
-    final_doc = Document(temp_base)
+            doc = DocxTemplate(src)
+            doc.render(data)
 
-    for f in forms[1:]:
+            out = os.path.join(OUTPUT, f)
+            doc.save(out)
 
-        src = os.path.join(WORD_DIR, f)
-        if not os.path.isfile(src):
-            continue
+            zipf.write(out, f)
 
-        tpl = DocxTemplate(src)
-        tpl.render(data)
-
-        temp = os.path.join(OUTPUT, "_temp.docx")
-        tpl.save(temp)
-
-        sub_doc = Document(temp)
-
-        final_doc.add_page_break()
-
-        for element in sub_doc.element.body:
-            final_doc.element.body.append(deepcopy(element))
-
-    final_path = os.path.join(OUTPUT, "final_forms.docx")
-    final_doc.save(final_path)
-
-    return final_path
+    return zip_path
 
 # ================= FIRST LOAN =================
 
 @app.route("/create-first", methods=["POST"])
 def create_first():
-    file = generate_docs(dict(request.form), [
+
+    zip_file = generate_and_zip(dict(request.form), [
         "form1.docx",
         "form10.docx"
     ])
-    return send_file(file, as_attachment=True)
+
+    return send_file(zip_file, as_attachment=True)
 
 # ================= CONTINUE LOAN =================
 
@@ -187,15 +166,16 @@ def create_continue():
     if not data.get("campaign"):
         forms.remove("form7.docx")
 
-    file = generate_docs(data, forms)
-    return send_file(file, as_attachment=True)
+    zip_file = generate_and_zip(data, forms)
+
+    return send_file(zip_file, as_attachment=True)
 
 # ================= CARD =================
 
 @app.route("/create-card", methods=["POST"])
 def create_card():
 
-    file = generate_docs(dict(request.form), [
+    zip_file = generate_and_zip(dict(request.form), [
         "form1.docx",
         "form2.docx",
         "form9.docx",
@@ -203,7 +183,7 @@ def create_card():
         "form11.docx"
     ])
 
-    return send_file(file, as_attachment=True)
+    return send_file(zip_file, as_attachment=True)
 
 # ================= LOGOUT =================
 
