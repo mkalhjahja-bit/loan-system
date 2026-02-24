@@ -159,12 +159,14 @@ def create_continue():
 
     forms = [
         "form1.docx",
+        "form2.docx",
         "form3.docx",
         "form4.docx",
         "form5.docx",
         "form6.docx",
         "form7.docx",
         "form8.docx",
+        "form9.docx",
         "form10.docx",
         "form11.docx"
     ]
