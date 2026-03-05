@@ -1,12 +1,10 @@
 from flask import Flask, render_template, request, redirect, session, send_file, flash
 import sqlite3, os, ast, zipfile
 from docxtpl import DocxTemplate
-from docx import Document
+from weasyprint import HTML
 
 app = Flask(__name__)
 app.secret_key = "loan123"
-
-# ================= PATHS =================
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 WORD_DIR = os.path.join(BASE, "word_templates")
@@ -113,53 +111,45 @@ def load_client(id, mode):
 
     return redirect("/clients")
 
-# ================= ZIP GENERATOR =================
+# ================= ZIP + PDF =================
 
 def generate_zip(data, forms):
 
     word_files = []
 
-    # إنشاء ملفات Word
     for f in forms:
 
         src = os.path.join(WORD_DIR, f)
 
         if not os.path.isfile(src):
-            print("Missing:", f)
             continue
 
         doc = DocxTemplate(src)
         doc.render(data)
 
-        out = os.path.join(OUTPUT, f)
-        doc.save(out)
+        word_path = os.path.join(OUTPUT, f)
+        doc.save(word_path)
 
-        word_files.append(out)
+        word_files.append(word_path)
 
-    # إنشاء ملف Word واحد للطباعة
-    final_doc = Document()
+    # إنشاء HTML للطباعة
+    html = "<h1>Loan Forms</h1>"
 
-    for w in word_files:
+    for f in forms:
+        html += f"<h3>{f}</h3><hr>"
 
-        doc = Document(w)
-
-        for element in doc.element.body:
-            final_doc.element.body.append(element)
-
-        final_doc.add_page_break()
-
-    final_print = os.path.join(OUTPUT, "PRINT_ALL.docx")
-    final_doc.save(final_print)
+    pdf_path = os.path.join(OUTPUT,"PRINT_ALL.pdf")
+    HTML(string=html).write_pdf(pdf_path)
 
     # إنشاء ZIP
-    zip_path = os.path.join(OUTPUT, "forms_result.zip")
+    zip_path = os.path.join(OUTPUT,"forms_result.zip")
 
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+    with zipfile.ZipFile(zip_path,"w",zipfile.ZIP_DEFLATED) as zipf:
 
         for w in word_files:
             zipf.write(w, os.path.basename(w))
 
-        zipf.write(final_print, "PRINT_ALL.docx")
+        zipf.write(pdf_path,"PRINT_ALL.pdf")
 
     return zip_path
 
@@ -197,7 +187,6 @@ def create_continue():
         "form11.docx"
     ]
 
-    # شرط سداد المديونية
     if data.get("debt_card"):
         if "form5.docx" in forms:
             forms.remove("form5.docx")
@@ -205,7 +194,6 @@ def create_continue():
         if "form6.docx" in forms:
             forms.remove("form6.docx")
 
-    # شرط الحملة
     if not data.get("campaign"):
         if "form7.docx" in forms:
             forms.remove("form7.docx")
