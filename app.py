@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, send_file, flash
-import sqlite3, os, ast, zipfile, subprocess
+import sqlite3, os, ast, zipfile
 from docxtpl import DocxTemplate
-from pypdf import PdfMerger
+from docx import Document
 
 app = Flask(__name__)
 app.secret_key = "loan123"
@@ -118,8 +118,8 @@ def load_client(id, mode):
 def generate_zip(data, forms):
 
     word_files = []
-    pdf_files = []
 
+    # إنشاء ملفات Word
     for f in forms:
 
         src = os.path.join(WORD_DIR, f)
@@ -131,38 +131,25 @@ def generate_zip(data, forms):
         doc = DocxTemplate(src)
         doc.render(data)
 
-        word_path = os.path.join(OUTPUT, f)
-        doc.save(word_path)
+        out = os.path.join(OUTPUT, f)
+        doc.save(out)
 
-        word_files.append(word_path)
+        word_files.append(out)
 
-        # تحويل Word إلى PDF باستخدام LibreOffice
-        subprocess.run([
-            "libreoffice",
-            "--headless",
-            "--convert-to",
-            "pdf",
-            word_path,
-            "--outdir",
-            OUTPUT
-        ])
+    # إنشاء ملف Word واحد للطباعة
+    final_doc = Document()
 
-        pdf_path = word_path.replace(".docx",".pdf")
+    for w in word_files:
 
-        if os.path.isfile(pdf_path):
-            pdf_files.append(pdf_path)
+        doc = Document(w)
 
-    # دمج ملفات PDF
-    merger = PdfMerger()
+        for element in doc.element.body:
+            final_doc.element.body.append(element)
 
-    for pdf in pdf_files:
-        merger.append(pdf)
+        final_doc.add_page_break()
 
-    final_pdf = os.path.join(OUTPUT,"PRINT_ALL.pdf")
-
-    if pdf_files:
-        merger.write(final_pdf)
-        merger.close()
+    final_print = os.path.join(OUTPUT, "PRINT_ALL.docx")
+    final_doc.save(final_print)
 
     # إنشاء ZIP
     zip_path = os.path.join(OUTPUT, "forms_result.zip")
@@ -172,8 +159,7 @@ def generate_zip(data, forms):
         for w in word_files:
             zipf.write(w, os.path.basename(w))
 
-        if os.path.isfile(final_pdf):
-            zipf.write(final_pdf,"PRINT_ALL.pdf")
+        zipf.write(final_print, "PRINT_ALL.docx")
 
     return zip_path
 
@@ -211,6 +197,7 @@ def create_continue():
         "form11.docx"
     ]
 
+    # شرط سداد المديونية
     if data.get("debt_card"):
         if "form5.docx" in forms:
             forms.remove("form5.docx")
@@ -218,6 +205,7 @@ def create_continue():
         if "form6.docx" in forms:
             forms.remove("form6.docx")
 
+    # شرط الحملة
     if not data.get("campaign"):
         if "form7.docx" in forms:
             forms.remove("form7.docx")
