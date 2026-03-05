@@ -3,4 +3,4 @@ gunicorn
 docxtpl
 docx2pdf
 pypdf
-
+weasyprint
