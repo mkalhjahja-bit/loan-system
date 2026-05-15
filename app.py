@@ -87,10 +87,7 @@ def calculator():
 def clients():
 
     with db() as con:
-
-        rows = con.execute(
-            "SELECT id,name FROM clients ORDER BY id DESC"
-        ).fetchall()
+        rows = con.execute("SELECT id,name FROM clients ORDER BY id DESC").fetchall()
 
     return render_template("clients.html", rows=rows)
 
@@ -100,16 +97,10 @@ def clients():
 def delete_client(id):
 
     with db() as con:
-
-        con.execute(
-            "DELETE FROM clients WHERE id=?",
-            (id,)
-        )
-
+        con.execute("DELETE FROM clients WHERE id=?", (id,))
         con.commit()
 
     flash("تم حذف العميل ✅")
-
     return redirect("/clients")
 
 # ================= SAVE CLIENT =================
@@ -118,40 +109,37 @@ def delete_client(id):
 def save_client():
 
     name = request.form.get("ClientName_AR","").strip()
-
     data = str(dict(request.form))
 
     if name:
-
         with db() as con:
-
-            con.execute(
-                "INSERT INTO clients(name,data) VALUES(?,?)",
-                (name, data)
-            )
-
+            con.execute("INSERT INTO clients(name,data) VALUES(?,?)", (name, data))
             con.commit()
 
         flash("تم حفظ العميل ✅")
 
     return redirect("/clients")
 
-# ================= LOAD CLIENT =================
+# ================= LOAD CLIENT (FIXED) =================
 
 @app.route("/load-client/<int:id>/<mode>")
 def load_client(id, mode):
 
     with db() as con:
-
-        row = con.execute(
-            "SELECT data FROM clients WHERE id=?",
-            (id,)
-        ).fetchone()
+        row = con.execute("SELECT data FROM clients WHERE id=?", (id,)).fetchone()
 
     if not row:
         return redirect("/clients")
 
     data = ast.literal_eval(row["data"])
+
+    # ================= FIX: number to words =================
+    try:
+        amount = data.get("FacilityAmount", 0)
+        number = int(float(str(amount).replace(",", "")))
+        data["FacilityAmountWords"] = num2words(number, lang="ar")
+    except:
+        data["FacilityAmountWords"] = ""
 
     if mode == "first":
         return render_template("first_loan.html", data=data)
@@ -164,29 +152,23 @@ def load_client(id, mode):
 
     return redirect("/clients")
 
-# ================= ZIP + PDF =================
+# ================= HELPER FUNCTION =================
 
 def generate_zip(data, forms):
-        # ================= تحويل مبلغ التسهيل إلى كلمات =================
 
-    facility_amount = (
-        data.get("FacilityAmount")
-        or data.get("facility_amount")
-        or data.get("loan_amount")
-        or ""
-    )
-
+    # ================= FIX: number to words =================
     try:
-
-        number = int(float(str(facility_amount).replace(",", "")))
-
-        data["FacilityAmountWords"] = num2words(
-            number,
-            lang="ar"
+        amount = (
+            data.get("FacilityAmount")
+            or data.get("facility_amount")
+            or data.get("loan_amount")
+            or 0
         )
 
-    except:
+        number = int(float(str(amount).replace(",", "")))
+        data["FacilityAmountWords"] = num2words(number, lang="ar")
 
+    except:
         data["FacilityAmountWords"] = ""
 
     word_files = []
@@ -199,11 +181,9 @@ def generate_zip(data, forms):
             continue
 
         doc = DocxTemplate(src)
-
         doc.render(data)
 
         word_path = os.path.join(OUTPUT, f)
-
         doc.save(word_path)
 
         word_files.append(word_path)
@@ -214,7 +194,6 @@ def generate_zip(data, forms):
         html += f"<h3>{f}</h3><hr>"
 
     pdf_path = os.path.join(OUTPUT,"PRINT_ALL.pdf")
-
     HTML(string=html).write_pdf(pdf_path)
 
     zip_path = os.path.join(OUTPUT,"forms_result.zip")
@@ -233,11 +212,7 @@ def generate_zip(data, forms):
 @app.route("/create-first", methods=["POST"])
 def create_first():
 
-    forms = [
-        "form1.docx",
-        "form10.docx"
-    ]
-
+    forms = ["form1.docx","form10.docx"]
     zip_file = generate_zip(dict(request.form), forms)
 
     return send_file(zip_file, as_attachment=True)
@@ -250,31 +225,19 @@ def create_continue():
     data = dict(request.form)
 
     forms = [
-        "form1.docx",
-        "form2.docx",
-        "form3.docx",
-        "form4.docx",
-        "form5.docx",
-        "form6.docx",
-        "form7.docx",
-        "form8.docx",
-        "form9.docx",
-        "form10.docx",
-        "form11.docx"
+        "form1.docx","form2.docx","form3.docx","form4.docx","form5.docx",
+        "form6.docx","form7.docx","form8.docx","form9.docx",
+        "form10.docx","form11.docx"
     ]
 
     if data.get("debt_card"):
-
         if "form5.docx" in forms:
             forms.remove("form5.docx")
-
     else:
-
         if "form6.docx" in forms:
             forms.remove("form6.docx")
 
     if not data.get("campaign"):
-
         if "form7.docx" in forms:
             forms.remove("form7.docx")
 
@@ -287,13 +250,7 @@ def create_continue():
 @app.route("/create-card", methods=["POST"])
 def create_card():
 
-    forms = [
-        "form1.docx",
-        "form2.docx",
-        "form9.docx",
-        "form10.docx",
-        "form11.docx"
-    ]
+    forms = ["form1.docx","form2.docx","form9.docx","form10.docx","form11.docx"]
 
     zip_file = generate_zip(dict(request.form), forms)
 
@@ -303,9 +260,7 @@ def create_card():
 
 @app.route("/logout")
 def logout():
-
     session.clear()
-
     return redirect("/")
 
 # ================= RUN =================
