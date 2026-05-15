@@ -4,3 +4,4 @@ docxtpl
 docx2pdf
 pypdf
 weasyprint
+num2words
