@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, send_file, flash
-import sqlite3, os, ast, zipfile
+import sqlite3, os, ast, zipfile, json
+from io import BytesIO
 from num2words import num2words
 from docxtpl import DocxTemplate
 from weasyprint import HTML
@@ -14,42 +15,28 @@ OUTPUT = os.path.join(BASE, "output")
 os.makedirs(WORD_DIR, exist_ok=True)
 os.makedirs(OUTPUT, exist_ok=True)
 
-DB = os.path.join(BASE, "database.db")
-
-# ================= DATABASE =================
-
-def db():
-    con = sqlite3.connect(DB)
-    con.row_factory = sqlite3.Row
-    return con
-
-with db() as con:
-    con.execute("""
-    CREATE TABLE IF NOT EXISTS clients(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        data TEXT
-    )
-    """)
-    con.commit()
-
 # ================= NO CACHE =================
 
 @app.after_request
 def add_header(response):
+
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
+
     return response
 
 # ================= LOGIN =================
 
-@app.route("/", methods=["GET","POST"])
+@app.route("/", methods=["GET", "POST"])
 def login():
 
     if request.method == "POST":
 
-        if request.form.get("username") == "admin" and request.form.get("password") == "1234":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        if username == "admin" and password == "1234":
 
             session["user"] = "admin"
 
@@ -61,103 +48,60 @@ def login():
 
 @app.route("/home")
 def home():
+
     return render_template("home.html")
 
 # ================= PAGES =================
 
 @app.route("/first-loan")
 def first_loan():
-    return render_template("first_loan.html", data=None)
+
+    return render_template(
+        "first_loan.html",
+        data=None
+    )
 
 @app.route("/continue-loan")
 def continue_loan():
-    return render_template("continue_loan.html", data=None)
+
+    return render_template(
+        "continue_loan.html",
+        data=None
+    )
 
 @app.route("/card")
 def card():
-    return render_template("card.html", data=None)
+
+    return render_template(
+        "card.html",
+        data=None
+    )
 
 @app.route("/calculator")
 def calculator():
-    return render_template("calculator.html")
 
-# ================= CLIENTS =================
+    return render_template(
+        "calculator.html"
+    )
+
+# ================= CLIENTS PAGE =================
 
 @app.route("/clients")
 def clients():
 
-    with db() as con:
-        rows = con.execute("SELECT id,name FROM clients ORDER BY id DESC").fetchall()
+    return render_template("clients.html")
 
-    return render_template("clients.html", rows=rows)
-
-# ================= DELETE CLIENT =================
-
-@app.route("/delete-client/<int:id>", methods=["POST"])
-def delete_client(id):
-
-    with db() as con:
-        con.execute("DELETE FROM clients WHERE id=?", (id,))
-        con.commit()
-
-    flash("تم حذف العميل ✅")
-    return redirect("/clients")
-
-# ================= SAVE CLIENT =================
+# ================= SAVE CLIENT FILE =================
 
 @app.route("/save-client", methods=["POST"])
 def save_client():
 
-    name = request.form.get("ClientName_AR","").strip()
-    data = str(dict(request.form))
+    data = dict(request.form)
 
-    if name:
-        with db() as con:
-            con.execute("INSERT INTO clients(name,data) VALUES(?,?)", (name, data))
-            con.commit()
+    # ================= amount to words =================
 
-        flash("تم حفظ العميل ✅")
-
-    return redirect("/clients")
-
-# ================= LOAD CLIENT (FIXED) =================
-
-@app.route("/load-client/<int:id>/<mode>")
-def load_client(id, mode):
-
-    with db() as con:
-        row = con.execute("SELECT data FROM clients WHERE id=?", (id,)).fetchone()
-
-    if not row:
-        return redirect("/clients")
-
-    data = ast.literal_eval(row["data"])
-
-    # ================= FIX: number to words =================
     try:
-        amount = data.get("FacilityAmount", 0)
-        number = int(float(str(amount).replace(",", "")))
-        data["FacilityAmountWords"] = num2words(number, lang="ar")
-    except:
-        data["FacilityAmountWords"] = ""
 
-    if mode == "first":
-        return render_template("first_loan.html", data=data)
-
-    if mode == "continue":
-        return render_template("continue_loan.html", data=data)
-
-    if mode == "card":
-        return render_template("card.html", data=data)
-
-    return redirect("/clients")
-
-# ================= HELPER FUNCTION =================
-
-def generate_zip(data, forms):
-
-    # ================= FIX: number to words =================
-    try:
         amount = (
             data.get("FacilityAmount")
             or data.get("facility_amount")
@@ -166,44 +110,199 @@ def generate_zip(data, forms):
         )
 
         number = int(float(str(amount).replace(",", "")))
-        data["FacilityAmountWords"] = num2words(number, lang="ar")
+
+        data["FacilityAmountWords"] = num2words(
+            number,
+            lang="ar"
+        )
 
     except:
+
+        data["FacilityAmountWords"] = ""
+
+    # ================= filename =================
+
+    client_name = data.get(
+        "ClientName_AR",
+        "client"
+    ).strip()
+
+    # ================= json =================
+
+    json_data = json.dumps(
+        data,
+        ensure_ascii=False,
+        indent=4
+    )
+
+    file_stream = BytesIO()
+
+    file_stream.write(
+        json_data.encode("utf-8")
+    )
+
+    file_stream.seek(0)
+
+    filename = f"{client_name}.json"
+
+    return send_file(
+        file_stream,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/json"
+    )
+
+# ================= OPEN CLIENT FILE =================
+
+@app.route("/upload-client", methods=["POST"])
+def upload_client():
+
+    file = request.files.get("client_file")
+
+    if not file:
+        return redirect("/clients")
+
+    data = json.load(file)
+
+    # ================= amount to words =================
+
+    try:
+
+        amount = (
+            data.get("FacilityAmount")
+            or data.get("facility_amount")
+            or data.get("loan_amount")
+            or 0
+        )
+
+        number = int(float(str(amount).replace(",", "")))
+
+        data["FacilityAmountWords"] = num2words(
+            number,
+            lang="ar"
+        )
+
+    except:
+
+        data["FacilityAmountWords"] = ""
+
+    mode = request.form.get("mode")
+
+    if mode == "first":
+
+        return render_template(
+            "first_loan.html",
+            data=data
+        )
+
+    if mode == "continue":
+
+        return render_template(
+            "continue_loan.html",
+            data=data
+        )
+
+    if mode == "card":
+
+        return render_template(
+            "card.html",
+            data=data
+        )
+
+    return redirect("/clients")
+
+# ================= GENERATE ZIP =================
+
+def generate_zip(data, forms):
+
+    # ================= amount to words =================
+
+    try:
+
+        amount = (
+            data.get("FacilityAmount")
+            or data.get("facility_amount")
+            or data.get("loan_amount")
+            or 0
+        )
+
+        number = int(float(str(amount).replace(",", "")))
+
+        data["FacilityAmountWords"] = num2words(
+            number,
+            lang="ar"
+        )
+
+    except:
+
         data["FacilityAmountWords"] = ""
 
     word_files = []
 
     for f in forms:
 
-        src = os.path.join(WORD_DIR, f)
+        src = os.path.join(
+            WORD_DIR,
+            f
+        )
 
         if not os.path.isfile(src):
             continue
 
         doc = DocxTemplate(src)
+
         doc.render(data)
 
-        word_path = os.path.join(OUTPUT, f)
+        word_path = os.path.join(
+            OUTPUT,
+            f
+        )
+
         doc.save(word_path)
 
         word_files.append(word_path)
 
+    # ================= pdf =================
+
     html = "<h1>Loan Forms</h1>"
 
     for f in forms:
+
         html += f"<h3>{f}</h3><hr>"
 
-    pdf_path = os.path.join(OUTPUT,"PRINT_ALL.pdf")
-    HTML(string=html).write_pdf(pdf_path)
+    pdf_path = os.path.join(
+        OUTPUT,
+        "PRINT_ALL.pdf"
+    )
 
-    zip_path = os.path.join(OUTPUT,"forms_result.zip")
+    HTML(
+        string=html
+    ).write_pdf(pdf_path)
 
-    with zipfile.ZipFile(zip_path,"w",zipfile.ZIP_DEFLATED) as zipf:
+    # ================= zip =================
+
+    zip_path = os.path.join(
+        OUTPUT,
+        "forms_result.zip"
+    )
+
+    with zipfile.ZipFile(
+        zip_path,
+        "w",
+        zipfile.ZIP_DEFLATED
+    ) as zipf:
 
         for w in word_files:
-            zipf.write(w, os.path.basename(w))
 
-        zipf.write(pdf_path,"PRINT_ALL.pdf")
+            zipf.write(
+                w,
+                os.path.basename(w)
+            )
+
+        zipf.write(
+            pdf_path,
+            "PRINT_ALL.pdf"
+        )
 
     return zip_path
 
@@ -212,10 +311,20 @@ def generate_zip(data, forms):
 @app.route("/create-first", methods=["POST"])
 def create_first():
 
-    forms = ["form1.docx","form10.docx"]
-    zip_file = generate_zip(dict(request.form), forms)
+    forms = [
+        "form1.docx",
+        "form10.docx"
+    ]
 
-    return send_file(zip_file, as_attachment=True)
+    zip_file = generate_zip(
+        dict(request.form),
+        forms
+    )
+
+    return send_file(
+        zip_file,
+        as_attachment=True
+    )
 
 # ================= CONTINUE LOAN =================
 
@@ -225,45 +334,78 @@ def create_continue():
     data = dict(request.form)
 
     forms = [
-        "form1.docx","form2.docx","form3.docx","form4.docx","form5.docx",
-        "form6.docx","form7.docx","form8.docx","form9.docx",
-        "form10.docx","form11.docx"
+        "form1.docx",
+        "form2.docx",
+        "form3.docx",
+        "form4.docx",
+        "form5.docx",
+        "form6.docx",
+        "form7.docx",
+        "form8.docx",
+        "form9.docx",
+        "form10.docx",
+        "form11.docx"
     ]
 
     if data.get("debt_card"):
+
         if "form5.docx" in forms:
             forms.remove("form5.docx")
+
     else:
+
         if "form6.docx" in forms:
             forms.remove("form6.docx")
 
     if not data.get("campaign"):
+
         if "form7.docx" in forms:
             forms.remove("form7.docx")
 
-    zip_file = generate_zip(data, forms)
+    zip_file = generate_zip(
+        data,
+        forms
+    )
 
-    return send_file(zip_file, as_attachment=True)
+    return send_file(
+        zip_file,
+        as_attachment=True
+    )
 
 # ================= CARD =================
 
 @app.route("/create-card", methods=["POST"])
 def create_card():
 
-    forms = ["form1.docx","form2.docx","form9.docx","form10.docx","form11.docx"]
+    forms = [
+        "form1.docx",
+        "form2.docx",
+        "form9.docx",
+        "form10.docx",
+        "form11.docx"
+    ]
 
-    zip_file = generate_zip(dict(request.form), forms)
+    zip_file = generate_zip(
+        dict(request.form),
+        forms
+    )
 
-    return send_file(zip_file, as_attachment=True)
+    return send_file(
+        zip_file,
+        as_attachment=True
+    )
 
 # ================= LOGOUT =================
 
 @app.route("/logout")
 def logout():
+
     session.clear()
+
     return redirect("/")
 
 # ================= RUN =================
 
 if __name__ == "__main__":
+
     app.run(debug=True)
