@@ -18,7 +18,9 @@ DB = os.path.join(BASE, "database.db")
 # ================= DATABASE =================
 
 def db():
-    return sqlite3.connect(DB)
+    con = sqlite3.connect(DB)
+    con.row_factory = sqlite3.Row
+    return con
 
 with db() as con:
     con.execute("""
@@ -28,15 +30,30 @@ with db() as con:
         data TEXT
     )
     """)
+    con.commit()
+
+# ================= NO CACHE =================
+
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 # ================= LOGIN =================
 
 @app.route("/", methods=["GET","POST"])
 def login():
+
     if request.method == "POST":
+
         if request.form.get("username") == "admin" and request.form.get("password") == "1234":
+
             session["user"] = "admin"
+
             return redirect("/home")
+
     return render_template("login.html")
 
 # ================= HOME =================
@@ -67,26 +84,55 @@ def calculator():
 
 @app.route("/clients")
 def clients():
-    rows = db().execute("SELECT id,name FROM clients ORDER BY id DESC").fetchall()
+
+    with db() as con:
+
+        rows = con.execute(
+            "SELECT id,name FROM clients ORDER BY id DESC"
+        ).fetchall()
+
     return render_template("clients.html", rows=rows)
 
-@app.route("/delete-client/<int:id>")
+# ================= DELETE CLIENT =================
+
+@app.route("/delete-client/<int:id>", methods=["POST"])
 def delete_client(id):
+
     with db() as con:
-        con.execute("DELETE FROM clients WHERE id=?", (id,))
+
+        con.execute(
+            "DELETE FROM clients WHERE id=?",
+            (id,)
+        )
+
+        con.commit()
+
+    flash("تم حذف العميل ✅")
+
     return redirect("/clients")
 
 # ================= SAVE CLIENT =================
 
 @app.route("/save-client", methods=["POST"])
 def save_client():
-    name = request.form.get("ClientName_AR","")
+
+    name = request.form.get("ClientName_AR","").strip()
+
     data = str(dict(request.form))
 
-    with db() as con:
-        con.execute("INSERT INTO clients(name,data) VALUES(?,?)",(name,data))
+    if name:
 
-    flash("تم حفظ العميل ✅")
+        with db() as con:
+
+            con.execute(
+                "INSERT INTO clients(name,data) VALUES(?,?)",
+                (name, data)
+            )
+
+            con.commit()
+
+        flash("تم حفظ العميل ✅")
+
     return redirect("/clients")
 
 # ================= LOAD CLIENT =================
@@ -94,11 +140,17 @@ def save_client():
 @app.route("/load-client/<int:id>/<mode>")
 def load_client(id, mode):
 
-    row = db().execute("SELECT data FROM clients WHERE id=?", (id,)).fetchone()
+    with db() as con:
+
+        row = con.execute(
+            "SELECT data FROM clients WHERE id=?",
+            (id,)
+        ).fetchone()
+
     if not row:
         return redirect("/clients")
 
-    data = ast.literal_eval(row[0])
+    data = ast.literal_eval(row["data"])
 
     if mode == "first":
         return render_template("first_loan.html", data=data)
@@ -125,23 +177,24 @@ def generate_zip(data, forms):
             continue
 
         doc = DocxTemplate(src)
+
         doc.render(data)
 
         word_path = os.path.join(OUTPUT, f)
+
         doc.save(word_path)
 
         word_files.append(word_path)
 
-    # إنشاء HTML للطباعة
     html = "<h1>Loan Forms</h1>"
 
     for f in forms:
         html += f"<h3>{f}</h3><hr>"
 
     pdf_path = os.path.join(OUTPUT,"PRINT_ALL.pdf")
+
     HTML(string=html).write_pdf(pdf_path)
 
-    # إنشاء ZIP
     zip_path = os.path.join(OUTPUT,"forms_result.zip")
 
     with zipfile.ZipFile(zip_path,"w",zipfile.ZIP_DEFLATED) as zipf:
@@ -164,6 +217,7 @@ def create_first():
     ]
 
     zip_file = generate_zip(dict(request.form), forms)
+
     return send_file(zip_file, as_attachment=True)
 
 # ================= CONTINUE LOAN =================
@@ -188,17 +242,22 @@ def create_continue():
     ]
 
     if data.get("debt_card"):
+
         if "form5.docx" in forms:
             forms.remove("form5.docx")
+
     else:
+
         if "form6.docx" in forms:
             forms.remove("form6.docx")
 
     if not data.get("campaign"):
+
         if "form7.docx" in forms:
             forms.remove("form7.docx")
 
     zip_file = generate_zip(data, forms)
+
     return send_file(zip_file, as_attachment=True)
 
 # ================= CARD =================
@@ -215,13 +274,16 @@ def create_card():
     ]
 
     zip_file = generate_zip(dict(request.form), forms)
+
     return send_file(zip_file, as_attachment=True)
 
 # ================= LOGOUT =================
 
 @app.route("/logout")
 def logout():
+
     session.clear()
+
     return redirect("/")
 
 # ================= RUN =================
