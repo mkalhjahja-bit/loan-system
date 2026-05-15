@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 
 <title>
-قائمة العملاء
+ملفات العملاء
 </title>
 
 <style>
@@ -17,101 +17,46 @@ background:#f2f5f9
 }
 
 .container{
-max-width:950px;
+max-width:800px;
 margin:auto;
 padding:30px
 }
 
 .card{
 background:white;
-padding:16px;
-margin-bottom:12px;
-border-radius:12px;
-box-shadow:0 6px 14px rgba(0,0,0,.08);
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-.name{
-font-size:18px;
-font-weight:bold
-}
-
-.actions{
-display:flex;
-align-items:center;
-gap:8px;
-}
-
-.actions button{
-border:none;
-padding:8px 14px;
-border-radius:8px;
-color:white;
-cursor:pointer;
-}
-
-.open{
-background:#2d89ef
-}
-
-.delete{
-background:#e74c3c
-}
-
-.modal{
-display:none;
-position:fixed;
-inset:0;
-background:rgba(0,0,0,.5);
-justify-content:center;
-align-items:center;
-}
-
-.box{
-background:white;
 padding:25px;
-border-radius:12px;
+border-radius:14px;
+box-shadow:0 6px 14px rgba(0,0,0,.08);
+margin-bottom:20px;
+}
+
+h2{
 text-align:center;
-width:300px;
+margin-bottom:30px;
 }
 
-.box a{
-display:block;
-margin:8px 0;
-padding:10px;
-border-radius:8px;
-color:white;
-text-decoration:none;
-font-weight:bold;
-}
-
-.first{
-background:#2d89ef
-}
-
-.continue{
-background:#27ae60
-}
-
-.cardreq{
-background:#e67e22
-}
-
-.flash{
-background:#27ae60;
-color:white;
+input,
+select,
+button{
+width:100%;
 padding:12px;
+margin-top:12px;
 border-radius:10px;
-margin-bottom:15px;
-text-align:center;
+border:1px solid #ccc;
+font-size:15px;
+}
+
+button{
+background:#2d89ef;
+color:white;
+border:none;
+cursor:pointer;
 font-weight:bold;
 }
 
 .back{
 display:inline-block;
-margin-top:15px;
+margin-top:20px;
 text-decoration:none;
 font-weight:bold;
 }
@@ -124,110 +69,61 @@ font-weight:bold;
 
 <div class="container">
 
-<h2 style="text-align:center">
-قائمة العملاء
+<h2>
+ملفات العملاء
 </h2>
 
-{% with messages = get_flashed_messages() %}
-{% if messages %}
+<div class="card">
 
-<div class="flash">
-{{ messages[0] }}
-</div>
-
-{% endif %}
-{% endwith %}
-
-{% for row in rows %}
-
-<div class="card client">
-
-<div class="name">
-{{row["name"]}}
-</div>
-
-<div class="actions">
-
-<button
-class="open"
-onclick="openClient({{row['id']}})"
->
-فتح
-</button>
+<h3>
+فتح ملف عميل
+</h3>
 
 <form
-action="/delete-client/{{row['id']}}"
+action="/upload-client"
 method="post"
-style="display:inline;"
+enctype="multipart/form-data"
 >
 
-<button class="delete" type="submit">
-حذف
+<input
+type="file"
+name="client_file"
+required
+>
+
+<select name="mode" required>
+
+<option value="">
+اختر العملية
+</option>
+
+<option value="first">
+طلب قرض
+</option>
+
+<option value="continue">
+استكمال
+</option>
+
+<option value="card">
+طلب بطاقة
+</option>
+
+</select>
+
+<button type="submit">
+فتح العميل
 </button>
 
 </form>
 
 </div>
 
-</div>
-
-{% endfor %}
-
 <a class="back" href="/home">
 ⬅ رجوع
 </a>
 
 </div>
-
-<div class="modal" id="modal">
-
-<div class="box">
-
-<h3>
-اختر العملية
-</h3>
-
-<a class="first" id="firstBtn">
-طلب قرض
-</a>
-
-<a class="continue" id="continueBtn">
-استكمال
-</a>
-
-<a class="cardreq" id="cardBtn">
-طلب بطاقة
-</a>
-
-<button onclick="closeModal()">
-إغلاق
-</button>
-
-</div>
-
-</div>
-
-<script>
-
-function openClient(id){
-
-document.getElementById("modal").style.display="flex"
-
-document.getElementById("firstBtn").href="/load-client/"+id+"/first"
-
-document.getElementById("continueBtn").href="/load-client/"+id+"/continue"
-
-document.getElementById("cardBtn").href="/load-client/"+id+"/card"
-
-}
-
-function closeModal(){
-
-document.getElementById("modal").style.display="none"
-
-}
-
-</script>
 
 </body>
 </html>
