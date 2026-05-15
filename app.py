@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, send_file, flash
 import sqlite3, os, ast, zipfile
+from num2words import num2words
 from docxtpl import DocxTemplate
 from weasyprint import HTML
 
@@ -166,6 +167,27 @@ def load_client(id, mode):
 # ================= ZIP + PDF =================
 
 def generate_zip(data, forms):
+        # ================= تحويل مبلغ التسهيل إلى كلمات =================
+
+    facility_amount = (
+        data.get("FacilityAmount")
+        or data.get("facility_amount")
+        or data.get("loan_amount")
+        or ""
+    )
+
+    try:
+
+        number = int(float(str(facility_amount).replace(",", "")))
+
+        data["FacilityAmountWords"] = num2words(
+            number,
+            lang="ar"
+        )
+
+    except:
+
+        data["FacilityAmountWords"] = ""
 
     word_files = []
 
