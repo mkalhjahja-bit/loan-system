@@ -1,9 +1,9 @@
 from flask import Flask, render_template, request, redirect, session, send_file, flash
-import sqlite3, os, ast, zipfile, json
+import sqlite3, os, ast, zipfile, json, subprocess
 from io import BytesIO
 from num2words import num2words
 from docxtpl import DocxTemplate
-from weasyprint import HTML
+from PyPDF2 import PdfMerger
 
 app = Flask(__name__)
 app.secret_key = "loan123"
@@ -238,6 +238,9 @@ def generate_zip(data, forms):
         data["FacilityAmountWords"] = ""
 
     word_files = []
+    pdf_files = []
+
+    # ================= CREATE WORD FILES =================
 
     for f in forms:
 
@@ -248,6 +251,8 @@ def generate_zip(data, forms):
 
         if not os.path.isfile(src):
             continue
+
+        # تعبئة الوورد
 
         doc = DocxTemplate(src)
 
@@ -262,24 +267,51 @@ def generate_zip(data, forms):
 
         word_files.append(word_path)
 
-    # ================= pdf =================
+        # ================= CONVERT WORD TO PDF =================
 
-    html = "<h1>Loan Forms</h1>"
+        try:
 
-    for f in forms:
+            subprocess.run([
+                "libreoffice",
+                "--headless",
+                "--convert-to",
+                "pdf",
+                "--outdir",
+                OUTPUT,
+                word_path
+            ])
 
-        html += f"<h3>{f}</h3><hr>"
+            pdf_path = word_path.replace(
+                ".docx",
+                ".pdf"
+            )
 
-    pdf_path = os.path.join(
+            if os.path.exists(pdf_path):
+
+                pdf_files.append(pdf_path)
+
+        except Exception as e:
+
+            print("PDF ERROR:", e)
+
+    # ================= MERGE ALL PDFS =================
+
+    final_pdf = os.path.join(
         OUTPUT,
         "PRINT_ALL.pdf"
     )
 
-    HTML(
-        string=html
-    ).write_pdf(pdf_path)
+    merger = PdfMerger()
 
-    # ================= zip =================
+    for pdf in pdf_files:
+
+        merger.append(pdf)
+
+    merger.write(final_pdf)
+
+    merger.close()
+
+    # ================= CREATE ZIP =================
 
     zip_path = os.path.join(
         OUTPUT,
@@ -292,6 +324,8 @@ def generate_zip(data, forms):
         zipfile.ZIP_DEFLATED
     ) as zipf:
 
+        # ملفات Word
+
         for w in word_files:
 
             zipf.write(
@@ -299,10 +333,14 @@ def generate_zip(data, forms):
                 os.path.basename(w)
             )
 
-        zipf.write(
-            pdf_path,
-            "PRINT_ALL.pdf"
-        )
+        # PDF النهائي
+
+        if os.path.exists(final_pdf):
+
+            zipf.write(
+                final_pdf,
+                "PRINT_ALL.pdf"
+            )
 
     return zip_path
 
