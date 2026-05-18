@@ -5,3 +5,4 @@ docx2pdf
 pypdf
 weasyprint
 num2words
+PyPDF2
