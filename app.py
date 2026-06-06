@@ -19,15 +19,22 @@ OUTPUT = os.path.join(BASE, "output")
 os.makedirs(WORD_DIR, exist_ok=True)
 os.makedirs(OUTPUT, exist_ok=True)
 
-SERVICE_ACCOUNT_FILE = os.path.join(BASE, "service_account.json")
+import os
 
-FOLDER_ID = "1sTAxZNmR-VKw9ULNiaoQWH68lnA05PsV"
+info = {
+    "type": os.environ["GOOGLE_TYPE"],
+    "project_id": os.environ["GOOGLE_PROJECT_ID"],
+    "private_key_id": os.environ["GOOGLE_PRIVATE_KEY_ID"],
+    "private_key": os.environ["GOOGLE_PRIVATE_KEY"].replace("\\n", "\n"),
+    "client_email": os.environ["GOOGLE_CLIENT_EMAIL"],
+    "client_id": os.environ["GOOGLE_CLIENT_ID"],
+    "token_uri": "https://oauth2.googleapis.com/token"
+}
 
-SCOPES = ["https://www.googleapis.com/auth/drive"]
-
-credentials = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE,
+credentials = service_account.Credentials.from_service_account_info(
+    info,
     scopes=SCOPES
+)
 )
 
 drive_service = build(
@@ -282,7 +289,7 @@ def generate_zip(data, forms):
         doc.render(data)
 
         word_path = os.path.join(
-            PUT,
+         OUTPUT,
             f
         )
 
@@ -484,33 +491,28 @@ def excel_files():
 
 
 @app.route("/upload-excels", methods=["POST"])
-def upload_excels():
+def upload_to_drive(file_obj, filename):
 
-    file_no = request.form.get("file_no")
-    client_name = request.form.get("client_name")
+    file_obj.seek(0)
 
-    salary_file = request.files.get("salary_excel")
-    debt_file = request.files.get("debt_excel")
+    file_metadata = {
+        "name": filename,
+        "parents": [FOLDER_ID]
+    }
 
-    if not salary_file or not debt_file:
-
-        flash("يرجى اختيار الملفين")
-
-        return redirect("/excel-files")
-
-    upload_to_drive(
-        salary_file,
-        f"{file_no}_{client_name}_salary.xlsx"
+    media = MediaIoBaseUpload(
+        io.BytesIO(file_obj.read()),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    upload_to_drive(
-        debt_file,
-        f"{file_no}_{client_name}_debt.xlsx"
-    )
+    uploaded = drive_service.files().create(
+        body=file_metadata,
+        media_body=media,
+        fields="id, webViewLink"
+    ).execute()
 
-    flash("تم رفع الملفات إلى Google Drive بنجاح ✅")
-
-    return redirect("/excel-files")
+    return uploaded.get("webViewLink")
+    
 # ================= LOGOUT =================
 
 @app.route("/logout")
