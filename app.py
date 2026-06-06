@@ -532,6 +532,10 @@ def logout():
 
     return redirect("/")
 
+@app.route("/excel-files")
+def excel_files():
+    return render_template("excel_files.html")
+
 # ================= RUN =================
 
 if __name__ == "__main__":
