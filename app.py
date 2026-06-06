@@ -16,6 +16,8 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 WORD_DIR = os.path.join(BASE, "word_templates")
 OUTPUT = os.path.join(BASE, "output")
 
+FOLDER_ID = "1sTAxZNmR-VKw9ULNiaoQWH68lnA05PsV"
+
 os.makedirs(WORD_DIR, exist_ok=True)
 os.makedirs(OUTPUT, exist_ok=True)
 
@@ -495,27 +497,34 @@ def excel_files():
 
 
 @app.route("/upload-excels", methods=["POST"])
-def upload_to_drive(file_obj, filename):
+def upload_excels():
 
-    file_obj.seek(0)
+    excel1 = request.files.get("excel1")
+    excel2 = request.files.get("excel2")
 
-    file_metadata = {
-        "name": filename,
-        "parents": [FOLDER_ID]
-    }
+    if not excel1 or not excel2:
+        flash("يرجى اختيار الملفين")
+        return redirect("/excel-files")
 
-    media = MediaIoBaseUpload(
-        io.BytesIO(file_obj.read()),
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    try:
 
-    uploaded = drive_service.files().create(
-        body=file_metadata,
-        media_body=media,
-        fields="id, webViewLink"
-    ).execute()
+        upload_to_drive(
+            excel1,
+            excel1.filename
+        )
 
-    return uploaded.get("webViewLink")
+        upload_to_drive(
+            excel2,
+            excel2.filename
+        )
+
+        flash("تم رفع الملفين إلى Google Drive بنجاح ✅")
+
+    except Exception as e:
+
+        flash(str(e))
+
+    return redirect("/excel-files")
     
 # ================= LOGOUT =================
 
