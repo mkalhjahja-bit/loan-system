@@ -382,6 +382,8 @@ def generate_zip(data, forms):
 
 def upload_to_drive(file_obj, filename):
 
+    print("🔥 ENTERED upload_to_drive")
+    
     file_obj.seek(0)
 
     file_metadata = {
