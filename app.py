@@ -35,7 +35,6 @@ credentials = service_account.Credentials.from_service_account_info(
     info,
     scopes=SCOPES
 )
-)
 
 drive_service = build(
     "drive",
