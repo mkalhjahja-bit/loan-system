@@ -490,35 +490,32 @@ def create_card():
 
 # ================= EXCEL FILES =================
 
-@app.route("/excel-files")
-def excel_files():
-
-    return render_template("excel_files.html")
-
-
 @app.route("/upload-excels", methods=["POST"])
 def upload_excels():
 
-    excel1 = request.files.get("excel1")
-    excel2 = request.files.get("excel2")
+    file_no = request.form.get("file_no")
+    client_name = request.form.get("client_name")
 
-    if not excel1 or not excel2:
+    salary_file = request.files.get("salary_excel")
+    debt_file = request.files.get("debt_excel")
+
+    if not salary_file or not debt_file:
         flash("يرجى اختيار الملفين")
         return redirect("/excel-files")
 
     try:
 
         upload_to_drive(
-            excel1,
-            excel1.filename
+            salary_file,
+            f"{file_no}_{client_name}_salary.xlsx"
         )
 
         upload_to_drive(
-            excel2,
-            excel2.filename
+            debt_file,
+            f"{file_no}_{client_name}_debt.xlsx"
         )
 
-        flash("تم رفع الملفين إلى Google Drive بنجاح ✅")
+        flash("تم رفع الملفات إلى Google Drive بنجاح ✅")
 
     except Exception as e:
 
