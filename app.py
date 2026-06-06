@@ -386,7 +386,7 @@ def upload_to_drive(file_obj, filename):
 
     file_metadata = {
         "name": filename,
-        "parents": [FOLDER_ID]  # 👈 هذا هو مكان الفولدر
+        "parents": [FOLDER_ID]
     }
 
     media = MediaIoBaseUpload(
@@ -401,7 +401,8 @@ def upload_to_drive(file_obj, filename):
         fields="id, name, parents, webViewLink"
     ).execute()
 
-    print("UPLOAD RESULT:", uploaded)
+    print("🔥 UPLOAD RESPONSE:")
+    print(uploaded)
 
     return uploaded
 # ================= FIRST LOAN =================
