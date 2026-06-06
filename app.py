@@ -30,7 +30,12 @@ info = {
     "client_id": os.environ["GOOGLE_CLIENT_ID"],
     "token_uri": "https://oauth2.googleapis.com/token"
 }
+from google.oauth2 import service_account
 
+SCOPES = [
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/spreadsheets"
+]
 credentials = service_account.Credentials.from_service_account_info(
     info,
     scopes=SCOPES
