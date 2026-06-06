@@ -382,6 +382,8 @@ def generate_zip(data, forms):
 
 def upload_to_drive(file_obj, filename):
 
+    file_obj.seek(0)  # 🔥 مهم جدًا
+
     file_metadata = {
         "name": filename,
         "parents": [FOLDER_ID]
@@ -389,7 +391,8 @@ def upload_to_drive(file_obj, filename):
 
     media = MediaIoBaseUpload(
         io.BytesIO(file_obj.read()),
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        resumable=True
     )
 
     uploaded = drive_service.files().create(
@@ -397,6 +400,8 @@ def upload_to_drive(file_obj, filename):
         media_body=media,
         fields="id"
     ).execute()
+
+    print("Uploaded File ID:", uploaded.get("id"))
 
     return uploaded.get("id")
 # ================= FIRST LOAN =================
