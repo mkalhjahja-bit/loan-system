@@ -1,3 +1,7 @@
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+import io
 from flask import Flask, render_template, request, redirect, session, send_file, flash
 import sqlite3, os, ast, zipfile, json, subprocess
 from io import BytesIO
@@ -15,6 +19,25 @@ OUTPUT = os.path.join(BASE, "output")
 os.makedirs(WORD_DIR, exist_ok=True)
 os.makedirs(OUTPUT, exist_ok=True)
 
+SERVICE_ACCOUNT_FILE = os.path.join(BASE, "service_account.json")
+
+FOLDER_ID = "1sTAxZNmR-VKw9ULNiaoQWH68lnA05PsV"
+
+SCOPES = ["https://www.googleapis.com/auth/drive"]
+
+credentials = service_account.Credentials.from_service_account_file(
+    SERVICE_ACCOUNT_FILE,
+    scopes=SCOPES
+)
+
+drive_service = build(
+    "drive",
+    "v3",
+    credentials=credentials
+)
+
+
+
 # ================= NO CACHE =================
 
 @app.after_request
@@ -28,7 +51,7 @@ def add_header(response):
 
 # ================= LOGIN =================
 
-@app.route("/", methods=["GET", "POST"])
+@app.re("/", methods=["GET", "POST"])
 def login():
 
     if request.method == "POST":
@@ -46,14 +69,14 @@ def login():
 
 # ================= HOME =================
 
-@app.route("/home")
+@app.re("/home")
 def home():
 
     return render_template("home.html")
 
 # ================= PAGES =================
 
-@app.route("/first-loan")
+@app.re("/first-loan")
 def first_loan():
 
     return render_template(
@@ -61,7 +84,7 @@ def first_loan():
         data=None
     )
 
-@app.route("/continue-loan")
+@app.re("/continue-loan")
 def continue_loan():
 
     return render_template(
@@ -69,7 +92,7 @@ def continue_loan():
         data=None
     )
 
-@app.route("/card")
+@app.re("/card")
 def card():
 
     return render_template(
@@ -77,7 +100,7 @@ def card():
         data=None
     )
 
-@app.route("/calculator")
+@app.re("/calculator")
 def calculator():
 
     return render_template(
@@ -86,14 +109,14 @@ def calculator():
 
 # ================= CLIENTS PAGE =================
 
-@app.route("/clients")
+@app.re("/clients")
 def clients():
 
     return render_template("clients.html")
 
 # ================= SAVE CLIENT FILE =================
 
-@app.route("/save-client", methods=["POST"])
+@app.re("/save-client", methods=["POST"])
 def save_client():
 
     data = dict(request.form)
@@ -154,7 +177,7 @@ def save_client():
 
 # ================= OPEN CLIENT FILE =================
 
-@app.route("/upload-client", methods=["POST"])
+@app.re("/upload-client", methods=["POST"])
 def upload_client():
 
     file = request.files.get("client_file")
@@ -259,7 +282,7 @@ def generate_zip(data, forms):
         doc.render(data)
 
         word_path = os.path.join(
-            OUTPUT,
+            PUT,
             f
         )
 
@@ -344,6 +367,25 @@ def generate_zip(data, forms):
 
     return zip_path
 
+def upload_to_drive(file_obj, filename):
+
+    file_metadata = {
+        "name": filename,
+        "parents": [FOLDER_ID]
+    }
+
+    media = MediaIoBaseUpload(
+        io.BytesIO(file_obj.read()),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    uploaded = drive_service.files().create(
+        body=file_metadata,
+        media_body=media,
+        fields="id"
+    ).execute()
+
+    return uploaded.get("id")
 # ================= FIRST LOAN =================
 
 @app.route("/create-first", methods=["POST"])
@@ -433,6 +475,42 @@ def create_card():
         as_attachment=True
     )
 
+# ================= EXCEL FILES =================
+
+@app.route("/excel-files")
+def excel_files():
+
+    return render_template("excel_files.html")
+
+
+@app.route("/upload-excels", methods=["POST"])
+def upload_excels():
+
+    file_no = request.form.get("file_no")
+    client_name = request.form.get("client_name")
+
+    salary_file = request.files.get("salary_excel")
+    debt_file = request.files.get("debt_excel")
+
+    if not salary_file or not debt_file:
+
+        flash("يرجى اختيار الملفين")
+
+        return redirect("/excel-files")
+
+    upload_to_drive(
+        salary_file,
+        f"{file_no}_{client_name}_salary.xlsx"
+    )
+
+    upload_to_drive(
+        debt_file,
+        f"{file_no}_{client_name}_debt.xlsx"
+    )
+
+    flash("تم رفع الملفات إلى Google Drive بنجاح ✅")
+
+    return redirect("/excel-files")
 # ================= LOGOUT =================
 
 @app.route("/logout")
