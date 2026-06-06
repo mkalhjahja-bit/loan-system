@@ -382,11 +382,11 @@ def generate_zip(data, forms):
 
 def upload_to_drive(file_obj, filename):
 
-    file_obj.seek(0)  # 🔥 مهم جدًا
+    file_obj.seek(0)
 
     file_metadata = {
         "name": filename,
-        "parents": [FOLDER_ID]
+        "parents": [FOLDER_ID]  # 👈 هذا هو مكان الفولدر
     }
 
     media = MediaIoBaseUpload(
@@ -398,12 +398,12 @@ def upload_to_drive(file_obj, filename):
     uploaded = drive_service.files().create(
         body=file_metadata,
         media_body=media,
-        fields="id"
+        fields="id, name, parents, webViewLink"
     ).execute()
 
-    print("Uploaded File ID:", uploaded.get("id"))
+    print("UPLOAD RESULT:", uploaded)
 
-    return uploaded.get("id")
+    return uploaded
 # ================= FIRST LOAN =================
 
 @app.route("/create-first", methods=["POST"])
