@@ -51,7 +51,7 @@ def add_header(response):
 
 # ================= LOGIN =================
 
-@app.re("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET", "POST"])
 def login():
 
     if request.method == "POST":
@@ -69,14 +69,14 @@ def login():
 
 # ================= HOME =================
 
-@app.re("/home")
+@app.route("/home")
 def home():
 
     return render_template("home.html")
 
 # ================= PAGES =================
 
-@app.re("/first-loan")
+@app.route("/first-loan")
 def first_loan():
 
     return render_template(
@@ -84,7 +84,7 @@ def first_loan():
         data=None
     )
 
-@app.re("/continue-loan")
+@app.route("/continue-loan")
 def continue_loan():
 
     return render_template(
@@ -92,7 +92,7 @@ def continue_loan():
         data=None
     )
 
-@app.re("/card")
+@app.route("/card")
 def card():
 
     return render_template(
@@ -100,7 +100,7 @@ def card():
         data=None
     )
 
-@app.re("/calculator")
+@app.route("/calculator")
 def calculator():
 
     return render_template(
@@ -109,14 +109,14 @@ def calculator():
 
 # ================= CLIENTS PAGE =================
 
-@app.re("/clients")
+@app.route("/clients")
 def clients():
 
     return render_template("clients.html")
 
 # ================= SAVE CLIENT FILE =================
 
-@app.re("/save-client", methods=["POST"])
+@app.route("/save-client", methods=["POST"])
 def save_client():
 
     data = dict(request.form)
@@ -177,7 +177,7 @@ def save_client():
 
 # ================= OPEN CLIENT FILE =================
 
-@app.re("/upload-client", methods=["POST"])
+@app.route("/upload-client", methods=["POST"])
 def upload_client():
 
     file = request.files.get("client_file")
